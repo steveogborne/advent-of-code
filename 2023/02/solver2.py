@@ -53,21 +53,23 @@ def colour_min(game):
             elif draw[1] == "green" and draw[0] > min_green: min_green = draw[0]
     return(min_blue,min_red,min_green)
 
-test = colour_min(nested_game_data(game_list[0])[1])
-print(nested_game_data(game_list[0]))
-print(test)
+# Write a function that returns the power of a given set of cube values
+def cube_power(blue,red,green):
+    return blue*red*green
 
-# Write a loop that iterates over the game data, tests if the game is possible and sums the game ID if yes
-# max_blue = 14
-# max_red = 12
-# max_green = 13
 
-# total = 0
+# test = colour_min(nested_game_data(game_list[0])[1])
+# print(nested_game_data(game_list[0]))
+# print(test)
 
-# for line in game_list:
-#     nested_line_data = nested_game_data(line)
-#     if game_is_possible(nested_line_data[1],max_blue,max_red,max_green):
-#         total += nested_line_data[0]
-#         # print("Game " + str(nested_line_data[0]) + " passed")
+# Write a loop that iterates over the game data, calculates the minimum set, cube power and sums over all games
 
-# print("Total = " + str(total))
+total = 0
+
+for line in game_list:
+    nested_line_data = nested_game_data(line)[1] #  don't need game_ID
+    minimum_set = colour_min(nested_line_data)
+    power = cube_power(minimum_set[0],minimum_set[1],minimum_set[2])
+    total += power
+
+print("Total = " + str(total))
