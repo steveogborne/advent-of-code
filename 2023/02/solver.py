@@ -12,7 +12,7 @@ input_file = open("puzzle_input.txt", "r")
 game_list = input_file.readlines()
 input_file.close()
 
-def clean_game_data(game_line):
+def nested_game_data(game_line):
     game = game_line[5:-1] #strip padding "Game " at start and "/n" at end
     game_ID = int(game.split(":")[0]) #string before : is game ID
     raw_game_result = game.split(":")[1] # string after : is game result
@@ -35,7 +35,22 @@ def clean_game_data(game_line):
 # example_set_result = [[0, "blue"], [0, "red"], [0, "green"]]
 # This is more structure than is required to solve the challenge but maybe it will be needed in part 2 and this is good practice
 
-print(clean_game_data(game_list[0]))
-
-def game_is_possible(game):
+def game_is_possible(game, blue_max, red_max, green_max):
+    for set in game:
+        for draw in set:
+            if draw[0] > blue_max and draw[1] == "blue": return False
+            elif draw[0] > red_max and draw[1] == "red": return False
+            elif draw[0] > green_max and draw[1] == "green": return False
+            else: print("possible so far...")
     return True
+
+nested_line_1_game_data = nested_game_data(game_list[1])[1]
+print(nested_line_1_game_data)
+
+max_blue = 14
+max_red = 12
+max_green = 13
+
+line_1_possible = game_is_possible(nested_line_1_game_data,max_blue,max_red,max_green)
+
+print(line_1_possible)
