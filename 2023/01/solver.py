@@ -1,5 +1,4 @@
 #! python3
-import array
 
 # Read input text from puzzle_input
 
