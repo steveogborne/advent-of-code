@@ -11,7 +11,7 @@ with open("puzzle_input.txt") as input:
 
 # step 0B create snippet for testing with
 snippet = []
-for i in range(10):
+for i in range(3):
     snippet.append(schematic[i])
 
 # List of symbols in case it will be useful...
@@ -45,10 +45,35 @@ for line_coord, line in enumerate(snippet):
         else:
             symbol_coords.append([line_coord, char_coord])
 
-print(symbol_coords)
-# check
-print(snippet[1][4])
-print(snippet[symbol_coords[0][0]][symbol_coords[0][1]])
+# print(symbol_coords)
+# print(snippet[symbol_coords[0][0]][symbol_coords[0][1]]) # check for symbol
+
+# Step 2AA List all numbers with their coordinates. Coordinates will have multiple values according to digits in the
+
+# How about:
+# number = [value, row_index, column_indexes]
+numbers = []
+flag = 0
+for line_coord, line in enumerate(snippet):
+    for char_coord, char in enumerate(line):
+        if char.isdecimal():
+            if flag == 0:
+                numbers.append([char, line_coord, [char_coord]])
+                flag = 1
+                print(str(char)+" "+str(flag))
+            elif flag == 1:
+                numbers[-1][0] += char
+                numbers[-1][2].append(char_coord)
+                print(str(char)+" "+str(flag))
+        else:
+            flag = 0
+            print(str(char)+" "+str(flag))
+
+print(numbers)
+
+# Step 2A Identify all numbers that touch A symbol
+# Step 2B Iterate to identify all numbers that touch all symbols
+# Note: corner case what about numbers shared by symbols? Visual inspection I can't see overlap
 
 # test_line = schematic[0]
 # line_coordinate = index
