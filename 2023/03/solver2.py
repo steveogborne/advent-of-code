@@ -1,9 +1,8 @@
 # puzzle_input is a text based "image"
-# Step 1 loacate all the symbols (2D coordinates)
-# Step 2 identify all numbers that "touch" the symbol (vert, horiz and diag) (coord +/-1)
-# Step 3 sum all numbers
-# Inspecting the puzzle_input the symbols are: [+,-,=,/,*,#,$,%,@,&]
-# Can check the above by removing all . and numbers if necessary
+# Step 1 loacate the coordinates of all *
+# Step 2 identify * that are gears (touch two numbers)
+# Step 3 identify both numbers
+# Step 4 calculate and sum "ratios"
 
 # step 0 import file data
 with open("puzzle_input.txt") as input:
@@ -14,38 +13,69 @@ snippet = []
 for i in range(3):
     snippet.append(schematic[i])
 
-# List of symbols in case it will be useful...
-
-symbols = ['+', '-', '=', '/', '*', '#', '$', '%', '@', '&'] # Not needed in the end
-
 import re
 from string import digits
 
-# Distraction... Test function to strip file down to symbols to check symbols used
+# Step 1 locate * coordinates
+# Haha! Can half resuse unused code. Procrastination win!
+# Step 2 build in logic to test if * is gear
+# Steb 2B modify touch function for symbols?
+# Create touch_number function by modifying touch_symbol function to help with logic in poss_gear_cords
+# Touch number will take one signle coordinate (phew! simpler) and check for TWO numbers
 
-def reduce_to_symbol(thing):
-    reduced_schematic = []
-    remove_digits = str.maketrans('', '', digits)
-    for line in thing:
-        new_line = line.replace(".","")
-        new_line = new_line.translate(remove_digits)
-        reduced_schematic.append(new_line)
-    return(reduced_schematic)
+def touch_numbers(coordinate, schematic):
+    touching = False # unless shown otherwise
+    r = coordinate[0] # row coordinate for search +/-1
+    c = coordinate[0] # columns coordinates for search +/-1
 
-# Step 1 locate symbol coordinates
-# Step 1A for each coordinate (line, index) check if symbol
-# Perhaps check for symbol is easier if check not "." and not "digit"?
-# Ok scrap 1A
+    # set lower and upper bounds of search box to take into account edges
+    if r == 0: r_min = 0
+    else: r_min = r-1
+    # print("R_min is: "+str(r_min))
+    if r == len(schematic)-1: r_max = len(schematic)-1
+    else: r_max = r+1
+    # print("R_max is: "+str(r_max))
+    if c == 0: c_min = 0
+    else: c_min = c-1
+    # print("C_min is: "+str(c_min))
+    if c == [len(schematic[0])-1]: c_max = len(schematic[0]-1)
+    else: c_max = c+1
+    # print("C_max is: "+str(c_max))
 
-def extract_symbols(schematic):
+    # Create a list of characters surrounding the number "search_box"
+    rowA = schematic[r_min][c_min:c_max+1] # row of characters above number (or through if top)
+    rowB = schematic[r][c_min:c_max+1] # row of characters though number
+    rowC = schematic[r_max][c_min:c_max+1] # row of characters under number (or through if bottom)
+    search_box = rowA + rowB + rowC
+    # print(search_box)
+
+    #inspect search box to see if there >= two adjacent number
+    count = 0
+    for char in search_box:
+        if char.isdecimal():
+            count += 1
+        else:
+            continue
+
+    # Return logic depending
+    if count >= 2: return(True)
+    else: return(False)
+
+def gear_coords(schematic):
     symbol_coords = [] # empty list to fill with coordinates
-    for line_coord, line in enumerate(snippet):
+    for line_coord, line in enumerate(schematic):
         for char_coord, char in enumerate(line):
-            if char == "." or char.isdecimal():
-                continue
-            else:
-                symbol_coords.append([line_coord, char_coord])
-# Not needed in end
+            if char == "*":
+                if touch_numbers([line_coord, char_coord], schematic):
+                    print("Gear found at: "+str(line_coord)+", "+str(char_coord)) # test
+                    symbol_coords.append([line_coord, char_coord])
+                else:
+                    print("Star found at: "+str(line_coord)+", "+str(char_coord)+" but not a gear") # test
+                    continue
+    return(symbol_coords)
+
+poss_gears = gear_coords(snippet) # test
+print(poss_gears)
 
 # Step 2A List all numbers with their coordinates.
 # number object has data structure [value, row_index, column_indexes]
@@ -116,14 +146,14 @@ numbers = extract_numbers(schematic)
 # Step 2B Iterate to identify all numbers that touch all symbols
 # For all numbers, if touching, add to total
 
-total = 0 # initialise
-for number in numbers:
-    value = int(number[0])
-    if touch_symbol(number, schematic)[0] == True:
-        total += value
-    else: continue
+# total = 0 # initialise
+# for number in numbers:
+#     value = int(number[0])
+#     if touch_symbol(number, schematic)[0] == True:
+#         total += value
+#     else: continue
 
-print(total)
+# print(total)
 
 # Note: corner case what about numbers shared by symbols? Visual inspection I can't see overlap
 
