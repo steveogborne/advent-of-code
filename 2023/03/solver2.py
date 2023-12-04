@@ -21,7 +21,6 @@ from string import digits
 # Touch number will take one signle coordinate (phew! simpler) and check for TWO numbers
 
 def touch_numbers(coordinate, schematic):
-    touching = False # unless shown otherwise
     r = coordinate[0] # row coordinate for search +/-1
     c = coordinate[1] # columns coordinates for search +/-1
 
@@ -34,7 +33,7 @@ def touch_numbers(coordinate, schematic):
     # Create a list of coordinates surrounding the gear
     # To avoid duplicates from same number only search in the bounding columns.
     # To avoid duplicates from repeating lines at edges change logic to only include bounding box elements if valid
-    # This way max count = 2 and gear when count = 2
+    # This way max count = 2 and gear when count = 2. Actually not true :(
 
     search_coords = []
     if r != 0 and c != 0: search_coords.append([r_min,c_min]) # top left
@@ -44,7 +43,7 @@ def touch_numbers(coordinate, schematic):
     if r != len(schematic)-1 and c != 0: search_coords.append([r_max,c_min]) # bottom left
     if r != len(schematic)-1 and c != len(schematic[0])-1: search_coords.append([r_max,c_max]) # bottom right
 
-    print(search_coords)
+    # print(search_coords)
     # Inspect coordinates to see if there are two adjacent numbers
     count = 0
     number_coords = []
@@ -57,43 +56,33 @@ def touch_numbers(coordinate, schematic):
             count += 1
         else:
             continue
-    print(number_coords)
+    # print(number_coords)
 
-    power_ratio = 1 # initialise
     # Return logic depending
-    if count == 2: return(True, power_ratio)
+    if count >= 2: return(True, number_coords)
     else: return(False, 0)
 
 # Step 2 locate * coordinates
 # Haha! Can half resuse unused code. Procrastination win!
 # Step 2B build in logic to test if * is gear
+#If yes, pass through coordinates associated with part numbers
 
 def gear_search(schematic):
-    gear_coords = [] # empty list to fill with coordinates
-    power_ratios = [] # empty list to fill with power ratios
+    part_number_coords = [] # empty list to fill with coordinates
     for line_coord, line in enumerate(schematic):
         for char_coord, char in enumerate(line):
             if char == "*":
                 gear = touch_numbers([line_coord, char_coord], schematic)
-                print(gear)
+                # print(gear)
                 if gear[0] == True:
-                    print("Gear found at: "+str(line_coord)+", "+str(char_coord)) # test
-                    power_ratios.append(gear[1])
-                    gear_coords.append([line_coord, char_coord])
+                    # print("Gear found at: "+str(line_coord)+", "+str(char_coord)) # test
+                    part_number_coords.append(gear[1])
                 else:
-                    print("Star found at: "+str(line_coord)+", "+str(char_coord)+" but not a gear") # test
+                    # print("Star found at: "+str(line_coord)+", "+str(char_coord)+" but not a gear") # test
                     continue
-    return(gear_coords, power_ratios)
+    return(part_number_coords)
 
-gears = gear_search(snippet) # test
-print(gears)
-
-# Step 3 Identify numbers
-# Reference gear coordinate
-# Can I use coordinates in extracted numbers to cross reference against coordinates in touch_numbers?
-# Brute force it with fresh search?
-
-
+# Reuse extract numbers code to find numbers
 def extract_numbers(schematic):
     numbers = [] # initialise
     flag = 0 # initialise a flag to keep track of if "inside number"
@@ -110,65 +99,52 @@ def extract_numbers(schematic):
                 flag = 0 # OMG took me ages to spot == error
     return(numbers)
 
-# Step 2B Write a function to check if number touches a symbol
-# I'll give it the number to search around and the schematic to search in
-def touch_symbol(number, schematic):
-    value = int(number[0]) # to return if touching, 0 if not
-    touching = False # unless shown otherwise
-    r = number[1] # row coordinate for search +/-1
-    cs = number[2] # columns coordinates for search +/-1
+# Step 3 Function to match part_number_clue to numbers to extract part_number_value
 
-    # set lower and upper bounds of search box to take into account edges
-    if r == 0: r_min = 0
-    else: r_min = r-1
-    # print("R_min is: "+str(r_min))
-    if r == len(schematic)-1: r_max = len(schematic)-1
-    else: r_max = r+1
-    # print("R_max is: "+str(r_max))
-    if cs[0] == 0: c_min = 0
-    else: c_min = cs[0]-1
-    # print("C_min is: "+str(c_min))
-    if cs[-1] == [len(schematic[0])-1]: c_max = len(schematic[0]-1)
-    else: c_max = cs[-1]+1
-    # print("C_max is: "+str(c_max))
+def find_part_number(part_number_clue, numbers):
+    for number in numbers:
+        if number[1] == part_number_clue[0]:
+            if part_number_clue[1] in number[2]:
+                return(number[0])
 
-    # Create a list of characters surrounding the number "search_box"
-    rowA = schematic[r_min][c_min:c_max+1] # row of characters above number (or through if top)
-    rowB = schematic[r][c_min:c_max+1] # row of characters though number
-    rowC = schematic[r_max][c_min:c_max+1] # row of characters under number (or through if bottom)
-    search_box = rowA + rowB + rowC
-    # print(search_box)
+# Step 4 Get clues from gear_search
+# Iterate over coordinate clues to find_part_numbers from numbers and return gear ratio
+# Deal with corner case of 3 coordinate clues
+# Sum ratios to get final answer
 
-    #inspect search box to see if there is an adjacent number
-    for char in search_box:
-        if char == "." or char.isdecimal():
-            continue
-        else:
-            touching = True
-            return(touching, value)
-
-    value = 0 # If this part of the loop is reached, no symbol is touching, value is 0
-    return(touching, value)
-
+part_number_clues = gear_search(schematic)
 numbers = extract_numbers(schematic)
-# print(len(schematic)) # test
-# print(len(schematic[0])) # test
-# print(numbers[-1]) # test
-# print(touch_symbol(numbers[-1], schematic)) # test
+ratios = []
+ratio_sum = 0
+uhohs = 0
+for clue_pair in part_number_clues:
+    if len(clue_pair) == 2:
+        number1 = find_part_number(clue_pair[0], numbers)
+        number2 = find_part_number(clue_pair[1], numbers)
+        # if number1 == number2: print("Fuck: "+str(clue_pair))
+        ratio = int(number1) * int(number2)
+        # print("Gear: "+str(clue_pair)+", Gear pair: "+str(number1)+", "+str(number2)+", "+str(ratio))
+        if number1 != number2:
+            ratios.append(ratio)
+            ratio_sum += ratio
+        else: print("Dodged that one")
+    elif len(clue_pair) >2 :
+        number1 = find_part_number(clue_pair[0], numbers)
+        number2 = find_part_number(clue_pair[-1], numbers)
+        ratio = int(number1) * int(number2)
+        #print("Gear: "+str(clue_pair)+", Gear pair: "+str(number1)+", "+str(number2)+", "+str(ratio))
+        ratios.append(ratio)
+        ratio_sum += ratio
+    else:
+        uhohs += 1
+        print("Uh Oh")
 
-# Step 2B Iterate to identify all numbers that touch all symbols
-# For all numbers, if touching, add to total
+print("Uh Oh's = "+str(uhohs))
+print(len(ratios))
+print("Ratio Sum is: "+str(ratio_sum))
 
-# total = 0 # initialise
-# for number in numbers:
-#     value = int(number[0])
-#     if touch_symbol(number, schematic)[0] == True:
-#         total += value
-#     else: continue
-
-# print(total)
-
-# Note: corner case what about numbers shared by symbols? Visual inspection I can't see overlap
-
-# test_line = schematic[0]
-# line_coordinate = index
+star_count = 0
+for line in schematic:
+    for char in line:
+        if char == "*": star_count += 1
+print(star_count)
