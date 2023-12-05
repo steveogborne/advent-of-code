@@ -34,15 +34,31 @@ def find_matches(card):
             matches += 1
     return(matches)
 
-print(find_matches(cleaned_card(raw_cards[0]))) # test
+# print(find_matches(cleaned_card(raw_cards[0]))) # test
 
-# NEW - write a function that creates a list of cards, matches, copies. Iterate over the list to increment copies according to preceeding matches
-# tracker = [[game(card), find_matches(card), 0] for card in all_cards]
+# Step 3 creates a list where each element conatins: card ID, number of matches, and number of copies.
+# Initialise copies to 1 for existing card
 
-tracker = [(cleaned_card(x)[0], find_matches(cleaned_card(x)), 0) for x in raw_cards]
-print(tracker[0])
+tracker = [[cleaned_card(x)[0], find_matches(cleaned_card(x)), 1] for x in raw_cards] # initialise score tracker
+# print(tracker[0]) # test
 
-# Step 4 iterate over all_cards to count matches - modify to count cards
+snippet = [x for x in tracker if x[0] <15]
+for x in snippet: print(x)
+
+# Step 4 Iterate over the list to increment copies according to preceeding matches
+def copy_cards(tracker):
+    # print("Calculating...")
+    for index, card in enumerate(tracker):
+        if card[1] > 0: # if there are matches...
+            # print("Calculating winnings from",card[2],"copies of card",card[0],"by updating next",card[1],"cards by",card[2])
+            for x in range(card[1]): # for every x following cards where x is the number of matches...
+                if index + x + 1 < len(tracker): # if still in the list
+                    # print(x+1,"update card",index+x+2,"'s score from",tracker[index+x+1][2],"to",tracker[index + x + 1][2]+1*card[2])
+                    tracker[index + x + 1][2] += 1*card[2]    # update that card's copies value by 1 (you win a copy of it) for every copy of the current card
+                # else: print(x+1,"Can't keep updating, end of the list reached, next card")
+
+copy_cards(snippet)
+for x in snippet: print(x)
 
 # total_score = 0
 # for card in all_cards:
