@@ -43,7 +43,7 @@ tracker = [[cleaned_card(x)[0], find_matches(cleaned_card(x)), 1] for x in raw_c
 # print(tracker[0]) # test
 
 snippet = [x for x in tracker if x[0] <15]
-for x in snippet: print(x)
+# for x in snippet: print(x)
 
 # Step 4 Iterate over the list to increment copies according to preceeding matches
 def copy_cards(tracker):
@@ -57,12 +57,12 @@ def copy_cards(tracker):
                     tracker[index + x + 1][2] += 1*card[2]    # update that card's copies value by 1 (you win a copy of it) for every copy of the current card
                 # else: print(x+1,"Can't keep updating, end of the list reached, next card")
 
-copy_cards(snippet)
-for x in snippet: print(x)
+copy_cards(tracker)
 
-# total_score = 0
-# for card in all_cards:
-#     score = score_matches(find_matches(extract_numbers(card)))
-#     total_score += score
+# Step 5 calculate total number of cards
 
-# print(total_score)
+total_score = 0
+for card in tracker:
+    total_score += card[2]
+
+print(total_score)
