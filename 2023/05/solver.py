@@ -4,12 +4,7 @@
 # Write a function to use all maps to convert from seed to location
 # Write a function to select the nearest (lowest) location
 
-# with open("puzzle_input.txt") as file:
-#     raw_file = file.read().splitlines()
-
-# Turn raw_file into usable tables
-# Need a function to create maps. Will use dictionaries to create a structure
-
+# Need a function to create maps. Map returned as a dictionary
 def create_map(raw_map):
     # raw_map.split(":")[0].split(" ")[0].split("-") # "input,to,output"
     source_name = raw_map.split(":")[0].split(" ")[0].split("-")[0] # "input"
@@ -35,6 +30,7 @@ def create_map(raw_map):
 
     return(map_dict)
 
+# Function that creates a list of seeds and a list of all maps from raw file
 def process_raw(raw_file):
     with open(raw_file, 'r') as file:
         temp = file.read().split('\n\n')
@@ -42,7 +38,29 @@ def process_raw(raw_file):
     maps = [create_map(temp[x]) for x in range(len(temp)) if x>0]
     return(seeds, maps)
 
-seeds = process_raw("puzzle_input.txt")[0] # list of seeds
-maps = process_raw("puzzle_input.txt")[1] # list of map dictionaries
+# Function to navigate a given map with a given input and return an output
+def navigate_map(map, input):
+    # clever use of map to translate input to output
+    # TO DO
+    output = input
+    return(output)
 
-print(maps[0]["source category"]) # test
+# Function that navigates all maps to translate seed to location
+def translate_seed(seed, maps):
+    working_location = seed
+    for map in maps:
+        navigate_map(working_location, map)
+    location = working_location
+    return(location)
+
+# Solve the problem!
+def main():
+    seeds = process_raw("puzzle_input.txt")[0] # list of seeds
+    maps = process_raw("puzzle_input.txt")[1] # list of map dictionaries
+    # print(maps[0]["source category"]) # test
+
+    seed_locations = [translate_seed(seed, maps) for seed in seeds] # need to define translate_seeds function
+    closest_location = min(seed_locations)
+    return(closest_location)
+
+print(main())
