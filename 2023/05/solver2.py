@@ -3,7 +3,7 @@
 # Expand the search to find the nearest location for all of these seeds
 # Should be able to reuse a lot of code this time. The only problem will be if if the data becomes too unweildy
 
-# Need a function to create maps. Map returned as a dictionary. Stays the same
+# Need a function to create maps. Map returned as a dictionary. For part 2 stays the same
 def create_map(raw_map):
     # raw_map.split(":")[0].split(" ")[0].split("-") # "input,to,output"
     source_name = raw_map.split(":")[0].split(" ")[0].split("-")[0] # "input"
@@ -33,11 +33,18 @@ def create_map(raw_map):
 def process_raw(raw_file):
     with open(raw_file, 'r') as file:
         temp = file.read().split('\n\n')
-    seeds = [int(x) for x in temp[0].split(":")[1].strip().split(" ")]
+    seed_range_list = [int(x) for x in temp[0].split(":")[1].strip().split(" ")]
+    n = 0 # initialise counter
+    seeds = [] # initialise seeds
+    # append seeds with tuples by iterating n by 2 each time:
+    while n < len(seed_range_list):
+        seeds.append((seed_range_list[n], seed_range_list[n + 1]))
+        n += 2
+    # map list populated by repeatedly calling create_map for each raw map element in temp
     maps = [create_map(temp[x]) for x in range(len(temp)) if x>0]
     return(seeds, maps)
 
-# Function to navigate a given map with a given input and return an output - stays the same
+# Function to navigate a given map with a given input and return an output - for part 2 stays the same
 def navigate_map(source, map):
     # Use of map to translate source to destination
     # 1 find nearest source (when source is in range of source[x] nearest source is source[x])
@@ -74,14 +81,14 @@ def translate_seed(seed, maps):
 # we should keep track of the minimum and compare so that we can compute one seed at a time
 def main():
     seeds = process_raw("puzzle_input.txt")[0] # list of seeds
-    maps = process_raw("puzzle_input.txt")[1] # list of map dictionaries
+    # maps = process_raw("puzzle_input.txt")[1] # list of map dictionaries
     # test_dest = translate_seed(seeds[0], maps)
     # print(test_dest)
 
-    seed_locations = [[seed for seed in seeds], [translate_seed(seed, maps) for seed in seeds]] # need to define translate_seeds function
+    # seed_locations = [[seed for seed in seeds], [translate_seed(seed, maps) for seed in seeds]] # need to define translate_seeds function
     # for x in range(len(seed_locations[0])): print(seed_locations[0][x], seed_locations[1][x]) # check do the seeds change?
-    closest_location = min(seed_locations[1])
-    closest_seed = seed_locations[0][seed_locations[1].index(closest_location)]
-    print("Closest location is", closest_location, "for seed", closest_seed)
+    # closest_location = min(seed_locations[1])
+    # closest_seed = seed_locations[0][seed_locations[1].index(closest_location)]
+    # print("Closest location is", closest_location, "for seed", closest_seed)
 
 main()
