@@ -25,4 +25,13 @@ def findlinecode(line):
 code_total = 0
 for line in line_list:
     code_total = code_total + findlinecode(line)
-print(code_total)
+# print(code_total)
+
+
+# Have a go a wirting it again but more compact:
+with open("puzzle_input.txt") as file:
+    total = 0
+    for line in file:
+        list = [x for x in line if x.isdecimal()]
+        total += int(list[0]+list[-1])
+print(total)
