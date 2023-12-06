@@ -52,14 +52,12 @@ def navigate_map(source, map):
     # 1 find nearest source (when source is in range of source[x] nearest source is source[x])
     # 2 record source offset (source[x] - source)
     # 3 calculate destination (destination[x] + offset)
-    if source != "Error":
-        for index, source_start in enumerate(map["source range start"]):
-            offset = source - source_start
-            if offset >= 0 and offset < map["range length"][index]:
-                destination = map["destination range start"][index] + offset
-                break
-            else: destination = source # if no mapping then dest = source
-    else: return("Error")
+    for index, source_start in enumerate(map["source range start"]):
+        offset = source - source_start
+        if offset >= 0 and offset < map["range length"][index]:
+            destination = map["destination range start"][index] + offset
+            break
+        else: destination = source # if no mapping then dest = source
 
     return(destination)
 
@@ -75,21 +73,21 @@ def translate_seed(seed, maps):
     for map in maps:
         # print(map["source category"],working_location,"to ",map["destination category"],navigate_map(working_location, map))
         working_location = navigate_map(working_location, map) # luckily maps are in order so don't need to name check sources to destinations!
-    if working_location != "Error": location = working_location
-    else: location = "Error"
+    location = working_location
     return(location)
 
 # Function to find the closest location given a seed, range pair and maps
 def find_closest(seed, seed_range, maps):
-    closest = 0
+    closest = 999999999999
     current_seed = seed
     for n in range(seed_range):
         if n%100000 ==0:
             os.system('cls' if os.name == 'nt' else 'clear')
             calculations_remaining = seed_range - n
             print(calculations_remaining, "calculations remaining")
+            print("closest location is", closest)
         location = translate_seed(current_seed, maps)
-        if location < closest or closest == 0:
+        if location < closest:
             closest = location
         else: continue
     return(closest)
