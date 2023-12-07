@@ -18,13 +18,13 @@ def findlinecode(line):
         if letter.isdecimal():
             split_line.append(letter)
     code = int(split_line[0]+split_line[-1])
-    return code
+    return(code)
 
 # Sum all line numbers into a total
 
 code_total = 0
 for line in line_list:
-    code_total = code_total + findlinecode(line)
+    code_total += findlinecode(line)
 # print(code_total)
 
 
