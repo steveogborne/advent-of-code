@@ -26,7 +26,7 @@
 
 def hexify(line):
     # Function that turns hand nomenclature into something that can be alphanumerically sorted
-    # returns a string with hand rewritten with T to A ... A to E
+    # returns a string with hand rewritten with T to A ... A to E, except J -> 1
     # >>> hexify("JQKA9 456")
     # "BCDE9 456"
     line_hex = ''
@@ -35,7 +35,7 @@ def hexify(line):
             case "T":
                 line_hex += "A"
             case "J":
-                line_hex += "B"
+                line_hex += "1"
             case "Q":
                 line_hex += "C"
             case "K":
@@ -47,27 +47,46 @@ def hexify(line):
     return(line_hex)
 
 def classify_hand(hand):
-    # Function that takes a hand string and returns a classifier (doesn't need to be hexified)
+    # Function that takes a hand string and returns a classifier (hand needs to be hexified)
     # Assumes string is length 5
     # >>> classify_hand("AB434")
     # "k2"
+
+    jokers = hand.count("1")
     counts = []
     for char in hand:
         counts.append(hand.count(char))
     counts.sort(reverse=True)
     match counts[0]:
         case 5:
-            return("k5")
+            return("k5") # true regardless of jokers
         case 4:
-            return("k4")
+            if jokers > 0: return("k5") # 4J or 1J upgrade k4 to k5
+            else: return("k4")
         case 3:
-            if counts[3] == 2: return("fh")
-            else: return("k3")
+            match jokers:
+                case 0:
+                    if counts[3] == 2: return("fh")
+                    else: return("k3")
+                case 1: return("k4")
+                case 2: return("k5")
+                case 3:
+                    if counts[3] == 2: return("k5")
+                    else: return("k4")
         case 2:
-            if counts[2] == 2: return("p2")
-            else: return("p1")
+            match jokers:
+                case 0:
+                    if counts[2] == 2: return("p2")
+                    else: return("p1")
+                case 1:
+                    if counts[2] == 2: return("fh") # p2 -> fh
+                    else: return("k3") # 1p -> k3
+                case 2:
+                    if counts[2] == 2: return("k4")
+                    else: return("k3")
         case 1:
-            return("hc")
+            if jokers == 0: return("hc")
+            else: return("p1")
 
 import bisect
 
