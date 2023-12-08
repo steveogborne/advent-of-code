@@ -21,7 +21,7 @@ with open("puzzle_input.txt", "r") as file:
 print(total_value)
 
 
-
+# Old solution
 
 def first_digit(line):
     numbers = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
