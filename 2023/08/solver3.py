@@ -34,12 +34,17 @@ Starting at AAA, follow the left/right instructions. How many steps are required
 
 # Solution sketch
 '''
-get dir
-read letter
-keep track of node: XXX
-lookup node with dir and return new node
-repeat
+prescan a loop for final node and store this node in the network map
+prescan a loop for presence of finish nodes and store their indexes in the network map
+now for every loop, we don't need to scan the nodes, we know where the final nodes will be met.
+for multiple ghosts, they both find a final node at the same time if they share a final node index within this loop
+store a list of ghost nodes
+for the next loop, look up the final node indexes that each ghost will meet and store as lists
+a union of these lists of final node indexes will tell us how many ghotss meet in this loop
+if not 6 then progress to the next loop using the loop end node short cut
+if this is slow then precompute a final node index list and next node reference for n loops
 '''
+
 
 import timeit
 #### SETUP ####
