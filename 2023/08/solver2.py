@@ -45,7 +45,6 @@ import timeit
 #### SETUP ####
 # globals
 direction_list = []
-loop_l = len(direction_list)
 network = {}
 
 # Fill dictionary "network" with node to LR next steps
@@ -53,6 +52,7 @@ network = {}
 with open("puzzle_input.txt") as file:
     input = file.read().split("\n\n")
     direction_list = input[0]
+    loop_l = len(direction_list)
     raw_network = input[1].splitlines()
     for line in raw_network:
         network[line.split(" = (")[0]] = [line.split(" = (")[1].split(", ")[0], line.split(" = ")[1].split(", ")[1][:-1:]]
