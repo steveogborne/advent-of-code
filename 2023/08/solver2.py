@@ -41,121 +41,162 @@ lookup node with dir and return new node
 repeat
 '''
 
-# Functions
-
-
-# Variables
-
-
-# Main code
 import timeit
+#### SETUP ####
+# globals
+direction_list = []
+loop_l = len(direction_list)
+network = {}
 
-# create one big dictionary of node to LR next steps
+# Fill dictionary "network" with node to LR next steps
 # network[ABC] -> ('DEF','GHI')
 with open("puzzle_input.txt") as file:
     input = file.read().split("\n\n")
-    dir = input[0]
+    direction_list = input[0]
     raw_network = input[1].splitlines()
-    network = {}
     for line in raw_network:
         network[line.split(" = (")[0]] = [line.split(" = (")[1].split(", ")[0], line.split(" = ")[1].split(", ")[1][:-1:]]
 
-# create nested dictionary of node to LR next steps nested by char in node
-# network[A][B][C] -> ('DEF','GHI')
-# with open("puzzle_input.txt") as file:
-#     input = file.read().split("\n\n")
-#     dir = input[0]
-#     raw_network = input[1].splitlines()
-#     nested_network = {}
-#     # count = 0
-#     for line in raw_network:
-#         input_pos = line.split(" = (")[0]
-#         d1 = input_pos[0]
-#         d2 = input_pos[1]
-#         d3 = input_pos[2]
-#         # print(d1,d2,d3, count)
-#         output_pos = [line.split(" = (")[1].split(", ")[0], line.split(" = ")[1].split(", ")[1][:-1:]]
-#         if d1 in nested_network.keys():
-#             if d2 in nested_network[d1].keys():
-#                 nested_network[d1][d2][d3] = output_pos
-#             else:
-#                 nested_network[d1][d2] = {d3: output_pos}
-#         else: nested_network[d1] = {d2: {d3: output_pos}}
-        # count+=1
-# print(nested_network.items())
-# pos = "AAA"
-# for keys in nested_network.keys():
-#     print(nested_network[keys].keys(), len(nested_network[keys]))
-
-# #compare access speeds of dictionaries: network and nested_network
-# lookup = "SJJ"
-# result = network[lookup]
-# result_n = nested_network[lookup[0]][lookup[1]][lookup[2]]
-# print(timeit.timeit("network[lookup]", globals=globals())) # 0.05
-# print(timeit.timeit("nested_network[lookup[0]][lookup[1]][lookup[2]]", globals=globals())) # 0.13
-# nested dictionary is approximately 2.6x slower than normal dict!
-
-# def move_node(d, p):
-#     match d:
-#         case "R": return [network[x][1] for x in p]
-#         case "L": return [network[x][0] for x in p]
-
-# def nav_network(pos, steps):
-#     temp_pos = pos
-#     temp_steps = steps
-#     for char in dir:
-#         temp_pos = move_node(char, temp_pos)
-#         temp_steps += 1
-#     return(temp_pos, temp_steps)
-
-def map_network_loop(pos):
-    temp_pos = pos
-    for d in dir:
+# Add to this dictionary's values a third node reference which is the node you reach at the end of one loop of directions
+# So now network[ABC] -> ('DEF','GHI','XYZ')
+def map_network_loop(start_node):
+    temp_node = start_node
+    for d in direction_list:
         match d:
-            case "R": temp_pos = network[temp_pos][1]
-            case "L": temp_pos = network[temp_pos][0]
-    return(temp_pos)
-
+            case "R": temp_node = network[temp_node][1]
+            case "L": temp_node = network[temp_node][0]
+    return(temp_node)
 for key in network.keys():
     network[key].append(map_network_loop(key))
-# for key in network.keys():
-#     network[key].append(map_network_loop(key))
+# for key, value in network.items():
+#     print(key,"->",value)
 
-for key, value in network.items():
-    print(key,"->",value)
-    # print(value[1]==value[2])
+# look up xxA nodes to find start positions of ghosts. ['STA', 'AAA', 'GPA', 'LKA', 'DFA', 'KKA'] ftr
+def initialise_ghosts():
+    start_vector = [key for key in network.keys() if key[2] == "A"]
+    ghosts_init = {}
+    for x in range(len(start_vector)):
+        ghosts_init[x] = [start_vector[x], 0, 0] # ghost[x] -> [start_node, 0 loops, 0 steps]
+    return(ghosts_init)
 
-def step_network(pos):
-    temp_pos = pos
-    new_steps = 0
-    for d in dir:
-        match d:
-            case "R": temp_pos = network[temp_pos][1]
-            case "L": temp_pos = network[temp_pos][0]
-        new_steps += 1
-        if temp_pos[2] == "Z" : return(temp_pos, new_steps)
-    return(temp_pos, new_steps)
+#### CALCULATOR ####
 
-def step_network_vec(pos_vec):
-    temp_pos = pos_vec
-    new_steps = 0
-    for d in dir:
-        match d:
-            case "R": temp_pos = [network[x][1] for x in temp_pos]
-            case "L": temp_pos = [network[x][0] for x in temp_pos]
-        new_steps += 1
-        if temp_pos == end: return(temp_pos, new_steps)
-    return(temp_pos, new_steps)
+# function to step one ghost through the network, one direction step at a time.
+# Returns if a xxZ node is found with incremented step and loop counter since initiation.
+def step_network(start_node, start_step):
+    this_node = start_node
+    this_step = start_step
+    new_loops = 0
+    while True:
+        match direction_list[this_step]:
+            case "L": this_node = network[this_node][0]
+            case "R": this_node = network[this_node][1]
+        this_step += 1 ######################################## CHECK for +/-1 error
+        if this_step == len(direction_list):
+            new_loops += 1
+            this_step = 0
+        if this_node[2] == "Z" : return(this_node, this_step, new_loops)
 
-def loop_network(pos):
-    return network[pos][3]
+# function to step one ghost within one loop from start step to end step. DOES NOT SUPPORT end step < start step
+def loop_to_point(start_node, start_step, end_step):
+    this_node = start_node
+    this_step = start_step
+    while this_step <= end_step:
+        match direction_list[this_step]:
+            case "L": this_node = network[this_node][0]
+            case "R": this_node = network[this_node][1]
+        this_step += 1 ######################################## CHECK for +/-1 error
+    return(this_node)
 
-def loop_network_vec(pos_vec):
-    return [network[x][3] for x in pos_vec]
+#function to quickly take one ghost from one node: step position to target step position
+def catchup(step_target, loop_target, this_ghost_node, this_ghost_loop, this_ghost_step):
+    loops_to_catch_up = loop_target - this_ghost_loop
+    # finish any incomplete loops
+    if this_ghost_step > 0:
+        while this_ghost_step <= loop_l:
+            match direction_list[this_ghost_step]:
+                case "L": this_ghost_node = network[this_ghost_node][0]
+                case "R": this_ghost_node = network[this_ghost_node][1]
+            this_ghost_step += 1
+        this_ghost_step = 0
+        loops_to_catch_up -= 1
+    # race through loops to catch up
+    while loops_to_catch_up > 0:
+        this_ghost_node = network[this_ghost_node][2]
+        loops_to_catch_up -= 0
+    # catch up last partial loop
+    while this_ghost_step <= step_target:
+        match direction_list[this_ghost_step]:
+            case "L": this_node = network[this_node][0]
+            case "R": this_node = network[this_node][1]
+    this_ghost_node = loop_to_point(this_ghost_node, 0, step_target)
+    return(this_ghost_node)
 
-def find_start_vector():
-    start_vector = [k for k, v in network.items() if k[2] == "A"]
-    return(start_vector)
+### STATE MACHINE:
+# n = number of ghosts at potential finish positions. At n=6 all ghosts are at finish
+# While n<6:
+# If n= 0: lead ghost: ghost0 is exploring - call step network with ghost0. When z is found n = 1
+# If n>0: ghost n+1 is catching up, where n = number of ghosts at lead ghost position
+#          call catchup on ghost n,
+#           call compare ghosts up to n
+#           if all z = n+1,
+#           else n=0
+# Excape means n = 6 and final steps = loops * loop length + steps for any ghost
+
+def main():
+    ghosts = initialise_ghosts()
+    # send first ghost ahead, one step at a time, updating
+    ghost_state = 0 # state machine. n=6 is the finish
+    # initialise lead ghost values
+    ghost0_n = ghosts[0][0] # node
+    ghost0_l = ghosts[0][1] # loops
+    ghost0_s = ghosts[0][2] # steps (within loop, not global)
+    # state machine
+    while ghost_state < 6:
+        if ghost_state == 0:
+            # lead ghost explores until a "Z" is found then returns and updates it's location
+            ghost0_n, ghost0_s, new_loops = step_network(ghost0_n, ghost0_s)
+            ghost0_l += new_loops
+            ghost_state += 1
+        # next ghost catches up
+        if ghost_state > 0:
+            ghosts[ghost_state][0] = catchup(ghost0_s,
+                                             ghost0_l,
+                                             ghosts[ghost_state][0],
+                                             ghosts[ghost_state][1],
+                                             ghosts[ghost_state][2])
+            ghosts[ghost_state][1] = ghost0_l
+            ghosts[ghost_state][2] = ghost0_s
+            # lead ghost and ghost to catch up compare finish values
+            if ghost0_n[2] == ghosts[ghost_state][0][2]: # it's a match, catch the next ghost up to check again
+                ghost_state += 1
+            else: ghost_state = 0 # it's not a match send the lead ghost to search again
+    #if we get here n = 6
+    final_steps = loop_l*ghost0_l + ghost0_s
+    print(ghost_state, "ghosts are in the same place")
+    print("at location: ", [ghosts[key][0] for key in ghosts])
+    print("after", final_steps, "fucking steps")
+
+main()
+
+# function to step a vector of ghosts through the network, one direction at a time.
+# Returns at the end of the loop or if a xxZ node is found.
+# Don't know if I need this
+# def step_network_vec(pos_vec, step):
+#     temp_pos = pos_vec
+#     new_steps = step
+#     for d in dir:
+#         match d:
+#             case "R": temp_pos = [network[x][1] for x in temp_pos]
+#             case "L": temp_pos = [network[x][0] for x in temp_pos]
+#         new_steps += 1
+#         if temp_pos == 0: return(temp_pos, new_steps) ################################# UPDATE ME
+#     return(temp_pos, new_steps)
+
+# function to fastforward a vector of ghosts through a loop if we know it doesn't need to stop
+# Don't know if I need this
+# def loop_network_vec(pos_vec):
+#     return [network[x][3] for x in pos_vec]
 
 # def find_end_vector():
 #     end_vector = [k for k, v in network.items() if k[2] == "Z"]
@@ -170,40 +211,38 @@ def find_start_vector():
 # steps = dir_loop_count * loop_length + dir_count
 # for catch up, skip through loop mapping for dir_loop_count, then scan in dir loop normally.
 
-
-
-def main():
-    pos = find_start_vector()
-    not_at_end = True
-    steps = 0
-    while not_at_end:
-        temp_pos = pos
-        # pos_steps = ghost_network(temp_pos, steps, end)
-        for d in dir:
-            match d:
-                case "R": temp_pos = [network[x][1] for x in temp_pos]
-                case "L": temp_pos = [network[x][0] for x in temp_pos]
-            steps += 1
-            # print(temp_pos, steps)
-            # if steps == 10: break
-            if temp_pos[0][2] == "Z":
-                if temp_pos[1][2] == "Z":
-                    # print("Found 2 Z! at step", steps)
-                    if temp_pos[2][2] == "Z":
-                        print("Found 3 Z! at step", steps)
-                        if temp_pos[3][2] == "Z":
-                            print("Found 4 Z! at step", steps)
-                            if temp_pos[4][2] == "Z":
-                                print("Found 5 Z! at step", steps)
-                                if temp_pos[4][2] == "Z":
-                                    print("Found 6 Z! at step", steps)
-                                    not_at_end = False
-            else:
-                continue
-        pos = temp_pos
-        # if steps == 10: break
-    print("Steps:", steps)
-# main()
+# def old_main():
+#     pos = find_start_vector()
+#     not_at_end = True
+#     steps = 0
+#     while not_at_end:
+#         temp_pos = pos
+#         # pos_steps = ghost_network(temp_pos, steps, end)
+#         for d in direction_list:
+#             match d:
+#                 case "R": temp_pos = [network[x][1] for x in temp_pos]
+#                 case "L": temp_pos = [network[x][0] for x in temp_pos]
+#             steps += 1
+#             # print(temp_pos, steps)
+#             # if steps == 10: break
+#             if temp_pos[0][2] == "Z":
+#                 if temp_pos[1][2] == "Z":
+#                     # print("Found 2 Z! at step", steps)
+#                     if temp_pos[2][2] == "Z":
+#                         print("Found 3 Z! at step", steps)
+#                         if temp_pos[3][2] == "Z":
+#                             print("Found 4 Z! at step", steps)
+#                             if temp_pos[4][2] == "Z":
+#                                 print("Found 5 Z! at step", steps)
+#                                 if temp_pos[4][2] == "Z":
+#                                     print("Found 6 Z! at step", steps)
+#                                     not_at_end = False
+#             else:
+#                 continue
+#         pos = temp_pos
+#         # if steps == 10: break
+#     print("Steps:", steps)
+# old_main()
 
 # pos = find_start_vector()
 # end = (find_end_vector())
