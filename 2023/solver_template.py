@@ -7,11 +7,12 @@
 '''
 
 '''
+# Variables
+with open("puzzle_input.txt") as file:
+    input = file.read().splitlines()
 
 # Functions
 
-
-# Variables
 
 
 # Main code

@@ -39,9 +39,10 @@ def main():
             new_difference_list = [superlist[-1][index+1]-superlist[-1][index] for index in range(len(superlist[-1])-1)]
             superlist.append(new_difference_list)
         predicted_value = 0
-        for list in superlist:
-            predicted_value += list[-1]
-        print([x[-1] for x in superlist], predicted_value)
+        for index, list in enumerate(superlist):
+            if index%2 ==0: predicted_value += list[0]
+            else: predicted_value -= list[0]
+        print([x[0] for x in superlist], predicted_value)
         predictions_sum += predicted_value
     print("Answer:",predictions_sum)
 
