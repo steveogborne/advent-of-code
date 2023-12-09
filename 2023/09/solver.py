@@ -20,22 +20,24 @@ If all lements of the last list in super list = 0
 with open("puzzle_input.txt") as file:
     input = file.read().splitlines()
 
-history_list = [[int(x) for x in input[0].split(" ")] for line in input]
+history_list = [[int(x) for x in line.split(" ")] for line in input]
 first_history = history_list[0]
 
 
 # Main code
 def main():
-    superlist = []
-    superlist.append(first_history)
-    while sum(superlist[-1]) != 0:
-        new_difference_list = [superlist[-1][index+1]-superlist[-1][index] for index in range(len(superlist[-1])-1)]
-        superlist.append(new_difference_list)
-    predicted_value = 0
-    for list in superlist:
-        predicted_value += list[-1]
-
-
-    print([x[-1] for x in superlist], predicted_value)
+    predictions_sum = 0
+    for history in history_list:
+        superlist = []
+        superlist.append(history)
+        while superlist[-1] != [0 for x in superlist[-1]]:
+            new_difference_list = [superlist[-1][index+1]-superlist[-1][index] for index in range(len(superlist[-1])-1)]
+            superlist.append(new_difference_list)
+        predicted_value = 0
+        for list in superlist:
+            predicted_value += list[-1]
+        print([x[-1] for x in superlist], predicted_value)
+        predictions_sum += predicted_value
+    print("Answer:",predictions_sum)
 
 main()
