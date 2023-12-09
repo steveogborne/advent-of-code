@@ -48,9 +48,10 @@ if this is slow then precompute a final node index list and next node reference 
 
 import timeit
 #### SETUP ####
+import time
 # globals
 direction_list = []
-loop_l = len(direction_list)
+loop_l = 0
 network = {}
 
 # Fill dictionary "network" with node to LR next steps
@@ -58,31 +59,90 @@ network = {}
 with open("puzzle_input.txt") as file:
     input = file.read().split("\n\n")
     direction_list = input[0]
+    loop_l = len(direction_list)
     raw_network = input[1].splitlines()
     for line in raw_network:
         network[line.split(" = (")[0]] = [line.split(" = (")[1].split(", ")[0], line.split(" = ")[1].split(", ")[1][:-1:]]
 
-# Add to this dictionary's values a third node reference which is the node you reach at the end of one loop of directions
-# So now network[ABC] -> ('DEF','GHI','XYZ')
+# print("Loop length =", loop_l)
+
+# Create a function that traverses the list of directions to find the end-of-loop node location for a given start node
 def map_network_loop(start_node):
     temp_node = start_node
-    for d in direction_list:
+    indexes = []
+    for count, d in enumerate(direction_list):
+        start = temp_node
+        if temp_node[2] == "Z":
+            indexes.append(count)
+            # print("Z found at", start)
         match d:
             case "R": temp_node = network[temp_node][1]
             case "L": temp_node = network[temp_node][0]
-    return(temp_node)
+        # print(start, "moves", d, "to", temp_node)
+    return(temp_node, indexes)
+
+# Iterate over the netowrk map and add a third node reference which is the node you reach at the end of one loop of directions
 for key in network.keys():
-    network[key].append(map_network_loop(key))
+    new_loop_node, z_index_list = map_network_loop(key)
+    network[key].append(new_loop_node)
+    network[key].append(z_index_list)
+# So now network[ABC] -> ('DEF','GHI','XYZ')
+
+# for key, value in network.items(): # test
+#     print(key,"->",value)          # test
+
+# key_list = network.keys()
 # for key, value in network.items():
-#     print(key,"->",value)
+#     if value[3]: print(key, ":", value)
+
+# DISCOVERY! The only times we find "xxZ" in a loop is at the beginning! It never appears half way through a loop!
+# Therefore just iterate the search over loops only!
+
+# Output:
+# Z found at HTZ
+# Z found at ZZZ
+# Z found at XDZ
+# Z found at LLZ
+# Z found at XGZ
+# Z found at TMZ
+# HTZ : ['DXG', 'XTB', 'XFX', [0]]
+# ZZZ : ['XCG', 'MCS', 'CRR', [0]]
+# XDZ : ['LHB', 'FLJ', 'FSN', [0]]
+# LLZ : ['RRK', 'GLG', 'GVP', [0]]
+# XGZ : ['CNF', 'BVF', 'QHQ', [0]]
+# TMZ : ['RTR', 'FML', 'TPN', [0]]
 
 # look up xxA nodes to find start positions of ghosts. ['STA', 'AAA', 'GPA', 'LKA', 'DFA', 'KKA'] ftr
 def initialise_ghosts():
-    start_vector = [key for key in network.keys() if key[2] == "A"]
-    ghosts_init = {}
-    for x in range(len(start_vector)):
-        ghosts_init[x] = [start_vector[x], 0, 0] # ghost[x] -> [start_node, 0 loops, 0 steps]
-    return(ghosts_init)
+    ghosts_list = [key for key in network.keys() if key[2] == "A"]
+    return(ghosts_list)
+
+# Main program stakes a starting list of ghost locations and moves them simoultaneously forward one loop at a time.
+# Each loop it checks if the ghosts are all at finishing nodes. If yes, end the loop and return step count. If no, continue searching
+def main():
+    ghosts_list = initialise_ghosts()
+    not_at_end = True
+    steps = 0
+    loop_length = loop_l
+    while not_at_end:
+        # ghosts_list_steps = ghost_network(temp_ghosts_list, steps, end)
+        for index, ghost in enumerate(ghosts_list):
+            ghosts_list[index] = network[ghost][2] # update ghost location via loop jump # s_list[index]
+        for ghost in ghosts_list:
+            if ghost[2] != "Z":
+                not_at_end = True
+                break
+            not_at_end = False
+        steps += loop_length
+        if steps == 100000000*loop_l: print(steps, "down")
+    print("Steps:", steps)
+    return(ghosts_list, steps)
+start = time.time()
+main()
+end = time.time()
+length = end - start
+print(length)
+# 10,000,000 loops = 10 seconds
 
 #### CALCULATOR ####
 
@@ -158,7 +218,7 @@ def catchup(step_target, loop_target, this_ghost_node, this_ghost_loop, this_gho
 #           else n=0
 # Excape means n = 6 and final steps = loops * loop length + steps for any ghost
 
-def main():
+# def main():
     ghosts = initialise_ghosts()
     # send first ghost ahead, one step at a time, updating
     ghost_state = 0 # state machine. n=6 is the finish
@@ -201,7 +261,7 @@ def main():
     print("at location: ", [ghosts[key][0] for key in ghosts])
     print("after", final_steps, "fucking steps")
 
-main()
+# main()
 
 # function to step a vector of ghosts through the network, one direction at a time.
 # Returns at the end of the loop or if a xxZ node is found.
