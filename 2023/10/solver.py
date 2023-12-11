@@ -23,17 +23,20 @@ Return the steps taken as teh answer.
 with open("puzzle_input.txt") as file:
     input = file.read().splitlines()
 
-
+# Coordinates defined as (line, character). So technically: (y, x) for ease of programming
 
 # Functions
-def find_start(input):
-    # scan for S retrun coordinates
-
+def find_start():
+    # scan for S return coordinates
+    for index_l, line in enumerate(input):
+        for index_c, char in enumerate(line):
+            if char == "S": s_loc = [index_l, index_c]
+    return(s_loc)
 
 
 # Main code
 def main():
-    answer = "Undefined"
+    answer = find_start()
     print("The solution is:",answer)
 
 main()
