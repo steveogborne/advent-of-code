@@ -37,11 +37,13 @@ Once all inner areas are done, count Is
 with open("puzzle_input.txt") as file:
     pipe_map = file.read().splitlines()
 
+pipe_map2 = pipe_map
 map_width = len(pipe_map[0])
 map_height = len(pipe_map)
 # print(map_width*map_height)
 
-# Coordinates defined as (line, character). So technically: (y, x) for ease of programming
+# Coordinates defined as (line, character). So technically: (y, x) for ease of programming.
+# Y axis increase DOWN the map! D'oh!
 
 # Functions
 def find_start():
@@ -112,9 +114,10 @@ def step_through_pipe(this_pipe):
 def main():
     start_loc = find_start()
     current_pipes = get_first_pipes(start_loc)
+    clockwise_pipe = current_pipes[0] # I can manually toggle which starting pipe is clockwise when I figure out which one it is!
     print("Starting at:",start_loc) #,"move to:")
     # print(current_pipes, "then move to:")
-    while current_pipes[0][0] != current_pipes[1][0]:
+    while current_pipes[0][0] != current_pipes[1][0]: ########################################## I am here
         current_pipes = (list(map(step_through_pipe, current_pipes)))
         # print(current_pipes, "then move to:")
     print("Finished at:",current_pipes[0][0], "after", current_pipes[0][2], "steps")
