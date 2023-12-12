@@ -24,12 +24,12 @@ Part 2: Not entirely sure how to solve this"
 Add some lines that, as the looper steps, updates a copy of the map turning the pipes into "@"
 I should change the stepper to only move in one direction
 Visually inspect the map... Perhaps the answer will be obvious. Probably not.
+Search from Top left for @. First P will be a RH turn going clockwise. Use this as the new start point. Go east to go clockwise.
 The next step would be to go around the loop again, and this time check the neighbouring tiles on the pipes "inside side" on the "new map"
 If the inspected tiles on the new map are not "@" mark them as "I"
-I'll need to add a new function for this
-I don't know how to decide which side is the "inside side" But I could do this manually?
-This will outline the I areas with Is. But then I'll need to fill those areas in! I don't know how to do that yet.
-Once all inner areas are done, count Is
+This search will bo to the clockwise right hand side as deep as you can go until another @ is reached.
+This should fill in all internal areas.
+The count all Is
 
 '''
 
@@ -37,7 +37,7 @@ Once all inner areas are done, count Is
 with open("puzzle_input.txt") as file:
     pipe_map = file.read().splitlines()
 
-pipe_map2 = pipe_map
+map_paint = [line for line in pipe_map]
 map_width = len(pipe_map[0])
 map_height = len(pipe_map)
 # print(map_width*map_height)
@@ -83,6 +83,9 @@ def step_through_pipe(this_pipe):
     last_move = this_pipe[1]
     step = this_pipe[2]
     next_pipe = []
+    new_painted_line = list(map_paint[line])
+    new_painted_line[col] = "@"
+    map_paint[line] = "".join(new_painted_line)
     # (Previously moved North)
     if last_move == "N":
         match str(pipe_map[line][col]):
@@ -113,14 +116,17 @@ def step_through_pipe(this_pipe):
 # Main code
 def main():
     start_loc = find_start()
-    current_pipes = get_first_pipes(start_loc)
-    clockwise_pipe = current_pipes[0] # I can manually toggle which starting pipe is clockwise when I figure out which one it is!
-    print("Starting at:",start_loc) #,"move to:")
+    current_pipe = get_first_pipes(start_loc)[0] # choose one arbitrarily we only need to go clockwise for the second loop
+    print("Starting at:",start_loc, "move to", current_pipe[0]) #,"move to:")
     # print(current_pipes, "then move to:")
-    while current_pipes[0][0] != current_pipes[1][0]: ########################################## I am here
-        current_pipes = (list(map(step_through_pipe, current_pipes)))
+    while current_pipe[0] != start_loc:
+        current_pipe = step_through_pipe(current_pipe)
         # print(current_pipes, "then move to:")
-    print("Finished at:",current_pipes[0][0], "after", current_pipes[0][2], "steps")
+    print("Finished at:",current_pipe[0], "after", current_pipe[2], "steps")
 
 
 main()
+
+with open("puzzle_output.txt", "w") as file:
+    for line in map_paint:
+        file.write(line+"\n")
