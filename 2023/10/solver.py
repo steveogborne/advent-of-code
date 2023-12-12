@@ -14,9 +14,9 @@ Input shouldn't need any processing /
 Run a search to find the squirrel and return it's coordinates /
 Write a function that takes the starting coordinate and finds the two connecting pipes. (Do manually?) /
 Write a function that takes a current location, a previous location and calculates the next position based on the symbol /
-Write a function that steps around the loop keeping track of location and steps take
-Write a function that runs both stepping functions in opposite directions simoultaneously until they meet at teh same coordinate.
-Return the steps taken as teh answer.
+Write a function that steps around the loop keeping track of location and steps take / (this is the above!)
+Write a function that runs both stepping functions in opposite directions simoultaneously until they meet at teh same coordinate. /
+Return the steps taken as teh answer. /
 '''
 
 # Variables
@@ -25,6 +25,7 @@ with open("puzzle_input.txt") as file:
 
 map_width = len(pipe_map[0])
 map_height = len(pipe_map)
+# print(map_width*map_height)
 
 # Coordinates defined as (line, character). So technically: (y, x) for ease of programming
 
@@ -44,53 +45,65 @@ def get_first_pipes(start_loc):
     # Look North
     if line != 0:
         for pipe in ["7","|","F"]:
-            if pipe_map[line+1][col] == pipe:
-                first_pipes.append([[line+1, col], "N"])
+            if pipe_map[line-1][col] == pipe:
+                first_pipes.append([[line-1, col], "N", 1, pipe_map[line][col]])
     # Look East
     if col != map_width:
         if pipe_map[line][col+1] == "J" or pipe_map[line][col+1] == "-" or pipe_map[line][col+1] == "7":
-            first_pipes.append([[line, col+1], "E"])
+            first_pipes.append([[line, col+1], "E", 1, pipe_map[line][col]])
     # Look South
     if line != map_height:
-        if pipe_map[line-1][col] == "L" or pipe_map[line-1][col] == "|" or pipe_map[line-1][col] == "J":
-            first_pipes.append([[line-1, col], "S"])
+        if pipe_map[line+1][col] == "L" or pipe_map[line+1][col] == "|" or pipe_map[line+1][col] == "J":
+            first_pipes.append([[line+1, col], "S", 1, pipe_map[line][col]])
     # Look West
     if col != 0:
         if pipe_map[line][col-1] == "F" or pipe_map[line][col-1] == "-" or pipe_map[line][col-1] == "L":
-            first_pipes.append([[line, col-1], "W"])
+            first_pipes.append([[line, col-1], "W", 1, pipe_map[line][col]])
     return(first_pipes)
 
-def step_through_pipe(this_loc, last_move):
+def step_through_pipe(this_pipe):
+    line = this_pipe[0][0]
+    col = this_pipe[0][1]
+    last_move = this_pipe[1]
+    step = this_pipe[2]
+    next_pipe = []
     # (Previously moved North)
     if last_move == "N":
-        match pipe_map[this_loc[0]][this_loc[1]]:
-            case "7": next_loc = [[this_loc[0], this_loc[1]-1], "W"]
-            case "|": next_loc = [[this_loc[0]+1, this_loc[1]], "N"]
-            case "F": next_loc = [[this_loc[0], this_loc[1]+1], "E"]
+        match str(pipe_map[line][col]):
+            case "7": next_pipe = [[line, col-1], "W", step+1, pipe_map[line][col]]
+            case "|": next_pipe = [[line-1, col], "N", step+1, pipe_map[line][col]]
+            case "F": next_pipe = [[line, col+1], "E", step+1, pipe_map[line][col]]
     # (Previously moved East)
     if last_move == "E":
-        match pipe_map[this_loc[0]][this_loc[1]]:
-            case "J": next_loc = [[this_loc[0]+1, this_loc[1]], "N"]
-            case "-": next_loc = [[this_loc[0], this_loc[1]+1], "E"]
-            case "7": next_loc = [[this_loc[0]-1, this_loc[1]], "S"]
+        match str(pipe_map[line][col]):
+            case "J": next_pipe = [[line-1, col], "N", step+1, pipe_map[line][col]]
+            case "-": next_pipe = [[line, col+1], "E", step+1, pipe_map[line][col]]
+            case "7": next_pipe = [[line+1, col], "S", step+1, pipe_map[line][col]]
     # (Previously moved South)
     if last_move == "S":
-        match pipe_map[this_loc[0]][this_loc[1]]:
-            case "L": next_loc = [[this_loc[0], this_loc[1]+1], "E"]
-            case "|": next_loc = [[this_loc[0]-1, this_loc[1]], "S"]
-            case "J": next_loc = [[this_loc[0], this_loc[1]]-1, "W"]
+        match str(pipe_map[line][col]):
+            case "L": next_pipe = [[line, col+1], "E", step+1, pipe_map[line][col]]
+            case "|": next_pipe = [[line+1, col], "S", step+1, pipe_map[line][col]]
+            case "J": next_pipe = [[line, col-1], "W", step+1, pipe_map[line][col]]
     # (Previously moved West)
     if last_move == "W":
-        match pipe_map[this_loc[0]][this_loc[1]]:
-            case "F": next_loc = [[this_loc[0]-1, this_loc[1]], "S"]
-            case "-": next_loc = [[this_loc[0], this_loc[1]-1], "W"]
-            case "L": next_loc = [[this_loc[0]+1, this_loc[1]], "N"]
-    return(next_loc)
+        match str(pipe_map[line][col]):
+            case "F": next_pipe = [[line+1, col], "S", step+1, pipe_map[line][col]]
+            case "-": next_pipe = [[line, col-1], "W", step+1, pipe_map[line][col]]
+            case "L": next_pipe = [[line-1, col], "N", step+1, pipe_map[line][col]]
+    if next_pipe ==[]: print("Something went wrong at [",line, ",",col, "], with last move:", last_move, "and current pipe:", pipe_map[line][col])
+    return(next_pipe)
 
 # Main code
 def main():
     start_loc = find_start()
-    first_pipes = get_first_pipes(start_loc)
-    print("Starting at:",start_loc,"move to:",first_pipes)
+    current_pipes = get_first_pipes(start_loc)
+    print("Starting at:",start_loc) #,"move to:")
+    # print(current_pipes, "then move to:")
+    while current_pipes[0][0] != current_pipes[1][0]:
+        current_pipes = (list(map(step_through_pipe, current_pipes)))
+        # print(current_pipes, "then move to:")
+    print("Finished at:",current_pipes[0][0], "after", current_pipes[0][2], "steps")
+
 
 main()
