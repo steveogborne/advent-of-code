@@ -33,52 +33,27 @@ with open("puzzle_input.txt") as file:
     # for line in patterns[0]: print(line)
 
 # Functions
-def fix_smudge(pattern, debug_on):
-        # Find potential mirror
-    for index, line in enumerate(pattern):
-        #print("check line",index) # test
-        if index > 0:
-            differences = 0
-            for c_index, char in enumerate(line):
-                if char != pattern[index-1][c_index]: differences +=1
-            if differences == 1:
-                #print("potential smudged mirror found at", index) # test
-                # If potential mirror: check mirror
-                check_index_L = index-2
-                check_index_R = index+1
-                check_limit = len(pattern)-1
-                mirror_check = True
-                while check_index_L >=0 and check_index_R <= check_limit:
-                    #print("Check pair:") # test
-                    #print(pattern[check_index_L]) # test
-                    #print(pattern[check_index_R]) # test
-                    if pattern[check_index_L]!=pattern[check_index_R]:
-                        mirror_check = False
-                        if debug_on: # test
-                            print("\nFalse mirror found at:",index, "on lines", check_index_L)
-                            print(pattern[check_index_L], "and", check_index_R)
-                            print(pattern[check_index_R])
-                        break
-                    check_index_L-=1
-                    check_index_R+=1
-                    if mirror_check:
-                        pattern[index] = pattern[index-1] # Fix mirror
-                        return(pattern, index)
-                    if debug_on: # test
-                        print("\nMirror found at:", index)
-    return(0) # no smudged mirror found
-
 def find_mirror(pattern, debug_on):
 
     # Find potential mirror
-    mirror_indexes = []
-    for index, line in enumerate(pattern):
-        #print("check line",index) # test
-        if index > 0 and line == pattern[index-1]:
-                #print("potential smudged mirror found at", index) # test
+    mirror_index = 0
+    for l_index, line in enumerate(pattern):
+        if l_index>0:
+            # Is this line a match for the one before it?
+            if line == pattern[l_index-1]: match_test= True
+            else: match_test = False
+            differences = 0
+            if line != pattern[l_index-1]:
+                for c_index, char in enumerate(line):
+                    if char != pattern[l_index-1][c_index]: differences +=1
+            if differences == 1: smudge_test = True
+            else: smudge_test = False
+            if match_test or smudge_test:
+                if debug_on:
+                    print("Potential smudged mirror found at", l_index) # test
                 # If potential mirror: check mirror
-                check_index_L = index-2
-                check_index_R = index+1
+                check_index_L = l_index-2
+                check_index_R = l_index+1
                 check_limit = len(pattern)-1
                 mirror_check = True
                 while check_index_L >=0 and check_index_R <= check_limit:
@@ -86,20 +61,27 @@ def find_mirror(pattern, debug_on):
                     #print(pattern[check_index_L]) # test
                     #print(pattern[check_index_R]) # test
                     if pattern[check_index_L]!=pattern[check_index_R]:
+                        for c_index, char in enumerate(pattern[check_index_L]):
+                            if char != pattern[check_index_R][c_index]: differences +=1
+                    if differences > 1:
                         mirror_check = False
-                        if debug_on: # test
-                            print("\nFalse mirror found at:",index, "on lines", check_index_L)
-                            print(pattern[check_index_L], "and", check_index_R)
-                            print(pattern[check_index_R])
+                        if debug_on and match_test: # test
+                            print("...False mirror found at:",l_index)
+                        if debug_on and smudge_test:
+                            print("...False smudged mirror found at:", l_index)
                         break
                     check_index_L-=1
                     check_index_R+=1
-                if mirror_check:
-                    mirror_indexes.append(index)
+                if differences == 0:
+                    mirror_check = False
                     if debug_on: # test
-                        print("\nMirror found at:", index)
+                        print("...Real mirror found at", l_index, "so it is ignored")
+                if mirror_check:
+                    mirror_index = l_index
+                    if debug_on: # test
+                        print("...SUCCESS: Smudged mirror found at:", l_index)
 
-    return(mirror_indexes)
+    return(mirror_index)
 
 def transpose_pattern(pattern):
     pattern_t = [col for col in pattern[0]] # initiate all lines in transposed pattern
@@ -111,52 +93,37 @@ def transpose_pattern(pattern):
     return(pattern_t)
 
 def score_pattern(pattern, debug_on):
-    # first attempt to fix the mirror if the smudge is on teh mirror line:
-    h_score = 0
-    v_score = 0
-    fixed_pattern = fix_smudge(pattern, debug_on) # Attempt to fix smudge hirizontally
-    if fixed_pattern:
-        h_score = 100*fixed_pattern[1]
-    else:
-        pattern_t = transpose_pattern(pattern)
-        fixed_pattern_t = fix_smudge(pattern_t, debug_on)
-        if fixed_pattern_t:
-            v_score = fixed_pattern_t[1]
-        else:
-            print("Uh-oh no fixed mirrors found")
-            print("\nSee this pattern:") # test
-            for line in pattern: print(line) # test
-
-    return(h_score+v_score)
-
 
     # Then check for mirrors as before (if needed?)
-    # if debug_on:
-    #     print("\nChecking the following pattern for horizintal mirrors:") # test
-    #     for line in pattern: print(line) # test
-    # h_score = find_mirror(pattern, debug_on)
-    # h_score = [100*x for x in h_score]
-    # if debug_on:
-    #     print("\nThis pattern scores:", h_score)
-    #     if len(h_score)>1: print("multi mirror here")
+    if debug_on:
+        print("\nChecking the following pattern for horizintal mirrors:") # test
+        # for line in pattern: print(line) # test
+    h_score = 100* find_mirror(pattern, debug_on)
+    #h_score = [100*x for x in h_score]
+    if debug_on:
+        print("This pattern scores:", h_score)
+        #if len(h_score)>1: print("multi mirror here")
 
-    # pattern_t = transpose_pattern(pattern)
-    # if debug_on:
-    #     print("\nChecking the transpose pattern for 'vertical' mirrors:") # test
-    #     for line in pattern_t: print(line) # test
-    # v_score = find_mirror(pattern_t, debug_on)
-    # if debug_on:
-    #     print("\nThis pattern scores:", v_score)
-    # if len(h_score)>1: print("multi mirror here!")
-    # return(sum(h_score)+sum(v_score))
+    pattern_t = transpose_pattern(pattern)
+    if debug_on:
+        print("\nChecking the transpose pattern for 'vertical' mirrors:") # test
+        #for line in pattern_t: print(line) # test
+    v_score = find_mirror(pattern_t, debug_on)
+    if debug_on:
+        print("\nThis pattern scores:", v_score)
+    #if len(h_score)>1: print("multi mirror here!")
+    #return(sum(h_score)+sum(v_score))
+    return(h_score+v_score)
 
 # Main code
 def main():
     total_score = 0
-    debug_on = False
+    debug_on = 0
+    full_search = 1
     for index, pattern in enumerate(patterns):
-        if True: # index >= 10 and index <=15:
+        if full_search or index >= 0 and index <=3:
             pattern_score = score_pattern(pattern, debug_on)
+            if pattern_score == 0: print("ERROR at pattern", index)
             total_score += pattern_score
     answer = total_score
     print("The solution is:",answer)
