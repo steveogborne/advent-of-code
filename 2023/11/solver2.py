@@ -54,12 +54,15 @@ def output_image(image):
 # Calculate number of empty lines between point A and B
 def get_empty_lines(A, B, line_indexes, column_indexes):
     empty_lines_passed = 0
-    for l_index in range(B[0] - A[0]):
+    line_refs = sorted([A[0], B[0]])
+    col_refs = sorted([A[1], B[1]])
+    for l_index in range(line_refs[0],line_refs[1]):
         if l_index in line_indexes:
             empty_lines_passed +=1
-    for c_index in range(B[1] - A[1]):
+    for c_index in range(col_refs[0],col_refs[1]):
         if c_index in column_indexes:
             empty_lines_passed +=1
+    empty_lines_passed *= 999999
     return(empty_lines_passed)
 
 # Main code
@@ -80,7 +83,7 @@ def main():
     total_shortest_distance = 0
     for index, galaxy1 in enumerate(galaxy_list):
         for galaxy2 in galaxy_list[index+1::]:
-            shortest_distance = abs(galaxy2[1] - galaxy1[1]) + abs(galaxy2[0] - galaxy1[0]) + 1000000*get_empty_lines(galaxy1, galaxy2, empty_line_indexes, empty_column_indexes)
+            shortest_distance = abs(galaxy2[1] - galaxy1[1]) + abs(galaxy2[0] - galaxy1[0]) + get_empty_lines(galaxy1, galaxy2, empty_line_indexes, empty_column_indexes)
             total_shortest_distance += shortest_distance
 
     answer = total_shortest_distance
