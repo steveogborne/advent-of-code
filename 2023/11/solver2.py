@@ -5,6 +5,9 @@ Need to find sum of shortest distance between every pair
 Pair distance = sum of index differences in x and y direction
 But space has expanded
 Every empty row and column needs to double
+
+Part 2: Rather than doubling the empty rows and columns they should be x1,000,000
+Calculate the new total distance
 '''
 
 # Solution sketch
@@ -15,6 +18,11 @@ Produce a list of every galaxy coordinate /
 For every entry in the list, sum the distance to every other entry in THE REST OF the list
 IN THE REST OF to avoid counting pairs twice
 Sum of sums should be the answer
+
+Part 2: Ok we're definitely not going to physically add in the spaces.
+Remove the code that does this and replace it with:
+Return the indexes of the empty rows
+When calculating the pair distances look up how many empty rows and columns there are in between and add 1m for each
 '''
 # Variables
 with open("puzzle_input.txt") as file:
