@@ -75,6 +75,12 @@ def get_first_pipes(start_loc):
     if col != 0:
         if pipe_map[line][col-1] == "F" or pipe_map[line][col-1] == "-" or pipe_map[line][col-1] == "L":
             first_pipes.append([[line, col-1], "W", 1, pipe_map[line][col]])
+    # Before starting let's change "S" to it's pipe:
+    start_line = list(pipe_map[line])
+    start_line[col] = "J"
+    pipe_map[line] = "".join(start_line)
+    map_paint[line] = "".join(start_line)
+    # print("".join(start_line))
     return(first_pipes)
 
 def step_through_pipe(this_pipe):
@@ -83,9 +89,7 @@ def step_through_pipe(this_pipe):
     last_move = this_pipe[1]
     step = this_pipe[2]
     next_pipe = []
-    new_painted_line = list(map_paint[line])
-    new_painted_line[col] = "@"
-    map_paint[line] = "".join(new_painted_line)
+    # print(line, col, last_move, step, pipe_map[line][col])
     # (Previously moved North)
     if last_move == "N":
         match str(pipe_map[line][col]):
@@ -113,20 +117,62 @@ def step_through_pipe(this_pipe):
     if next_pipe ==[]: print("Something went wrong at [",line, ",",col, "], with last move:", last_move, "and current pipe:", pipe_map[line][col])
     return(next_pipe)
 
+def get_top_left():
+    for il, line in enumerate(map_paint):
+        for ic, col in enumerate(line):
+            if col == "@": return([il,ic], "N", 0, pipe_map[il][ic])
+
+def fill_in_tiles(current_pipe):
+    # print("painting", current_pipe)
+    if current_pipe[3] == "|" and current_pipe[1] == "N": # need to add more tiles
+        fill_in_loc = [current_pipe[0][0],current_pipe[0][1]+1]
+        while map_paint[fill_in_loc[0]][fill_in_loc[1]] != "@":
+            new_painted_line = list(map_paint[fill_in_loc[0]])
+            new_painted_line[fill_in_loc[1]] = "I"
+            map_paint[fill_in_loc[0]] = "".join(new_painted_line)
+            # print("on line", fill_in_loc[0], "starting at", current_pipe, "mark", fill_in_loc, "as I")
+            fill_in_loc[1]+=1
+
+def output_map(output):
+    with open(output, "w") as file:
+        for line in map_paint:
+            file.write(line+"\n")
+
 # Main code
 def main():
     start_loc = find_start()
     current_pipe = get_first_pipes(start_loc)[0] # choose one arbitrarily we only need to go clockwise for the second loop
-    print("Starting at:",start_loc, "move to", current_pipe[0]) #,"move to:")
-    # print(current_pipes, "then move to:")
-    while current_pipe[0] != start_loc:
-        current_pipe = step_through_pipe(current_pipe)
-        # print(current_pipes, "then move to:")
-    print("Finished at:",current_pipe[0], "after", current_pipe[2], "steps")
+    print("Starting paint loop at:",start_loc, "move to", current_pipe[0]) #,"move to:")
 
+    # Trace pipe, painting the pipe element "@"
+    while current_pipe[0] != start_loc:
+        line = current_pipe[0][0]
+        col = current_pipe[0][1]
+        new_painted_line = list(map_paint[line])
+        new_painted_line[col] = "@"
+        map_paint[line] = "".join(new_painted_line)
+        next_pipe = step_through_pipe(current_pipe)
+        current_pipe = next_pipe
+    print("Finished painting at:",current_pipe[0], "after", current_pipe[2], "steps")
+    output_map("pipe_output.txt") # write map_paint to file for inspection
+
+    # Trace pipe, painting the internals "I"
+    current_pipe = get_top_left() # reset current pipe to top left "F"
+    new_start_loc = get_top_left()[0] # define fake start location to current location...
+    new_start_loc[0] +=1      # moved south 1
+    print("Starting fill in loop at:",new_start_loc, "move to", current_pipe[0]) #,"move to:")
+    while current_pipe[0] != new_start_loc:
+        fill_in_tiles(current_pipe)
+        next_pipe = step_through_pipe(current_pipe)
+        current_pipe = next_pipe
+    print("Finished painting infill, check fill_output to check")
+    output_map("fill_output.txt") # write map_paint to file for inspection
+
+    # Count I's
+    number_i = 0
+    for line in map_paint:
+        for col in line:
+            if col == "I": number_i += 1
+    print("There are",number_i,"internal tiles")
 
 main()
-
-with open("puzzle_output.txt", "w") as file:
-    for line in map_paint:
-        file.write(line+"\n")
