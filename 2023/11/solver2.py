@@ -38,15 +38,12 @@ def transpose_image(image):
     return(image_t)
 
 # Functions
-def expand_empty_lines(image):
+def find_empty_lines(image):
     empty_line_indexes = []
-    new_image = image
     for index, line in enumerate(image):
         if line.find("#") < 0:
             empty_line_indexes.append(index)
-    for index in reversed(empty_line_indexes):
-        new_image.insert(index, image[index])
-    return(new_image)
+    return(empty_line_indexes)
 
 def output_image(image):
     with open("expanded_sky.txt", "w") as file:
@@ -54,18 +51,27 @@ def output_image(image):
             file.write(line+"\n")
     return
 
+# Calculate number of empty lines between point A and B
+def get_empty_lines(A, B, line_indexes, column_indexes):
+    empty_lines_passed = 0
+    for l_index in range(B[0] - A[0]):
+        if l_index in line_indexes:
+            empty_lines_passed +=1
+    for c_index in range(B[1] - A[1]):
+        if c_index in column_indexes:
+            empty_lines_passed +=1
+    return(empty_lines_passed)
+
 # Main code
 def main():
     # Expand image
-    sky_expanded_height = expand_empty_lines(sky)
-    sky_expanded_height_t = transpose_image(sky_expanded_height)
-    sky_expanded_width = expand_empty_lines(sky_expanded_height_t)
-    sky_expanded = transpose_image(sky_expanded_width)
-    output_image(sky_expanded)
+    empty_line_indexes = find_empty_lines(sky)
+    sky_t = transpose_image(sky)
+    empty_column_indexes = find_empty_lines(sky_t)
 
     # Catalogue galaxies
     galaxy_list = []
-    for l_index, line in enumerate(sky_expanded):
+    for l_index, line in enumerate(sky):
         for c_index, col in enumerate(line):
             if col == "#": galaxy_list.append([l_index,c_index])
             else: continue
@@ -74,7 +80,7 @@ def main():
     total_shortest_distance = 0
     for index, galaxy1 in enumerate(galaxy_list):
         for galaxy2 in galaxy_list[index+1::]:
-            shortest_distance = abs(galaxy2[1] - galaxy1[1]) + abs(galaxy2[0] - galaxy1[0])
+            shortest_distance = abs(galaxy2[1] - galaxy1[1]) + abs(galaxy2[0] - galaxy1[0]) + 1000000*get_empty_lines(galaxy1, galaxy2, empty_line_indexes, empty_column_indexes)
             total_shortest_distance += shortest_distance
 
     answer = total_shortest_distance
