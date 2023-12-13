@@ -124,7 +124,10 @@ def get_top_left():
 
 def fill_in_tiles(current_pipe):
     # print("painting", current_pipe)
-    if current_pipe[3] == "|" and current_pipe[1] == "N": # need to add more tiles
+    current_tile = pipe_map[current_pipe[0][0]][current_pipe[0][1]]
+    if current_tile == "|" and current_pipe[1] == "N" or \
+        current_tile == "7" and current_pipe[1] == "N" or \
+        current_tile == "J" and current_pipe[1] == "E": # need to add more tiles
         fill_in_loc = [current_pipe[0][0],current_pipe[0][1]+1]
         while map_paint[fill_in_loc[0]][fill_in_loc[1]] != "@":
             new_painted_line = list(map_paint[fill_in_loc[0]])
@@ -174,5 +177,7 @@ def main():
         for col in line:
             if col == "I": number_i += 1
     print("There are",number_i,"internal tiles")
+
+
 
 main()
