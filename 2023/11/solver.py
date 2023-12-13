@@ -18,15 +18,29 @@ Sum of sums should be the answer
 '''
 # Variables
 with open("puzzle_input.txt") as file:
-    input = file.read().splitlines()
+    sky = file.read().splitlines()
+
+    sky_t = [col for col in sky[0]] # initiate all lines in transposed img
+    # print(sky_t)
+    for index_l, line in enumerate(sky):
+        if index_l > 0: # don't repeat the first line
+            for index_c, char in enumerate(line):
+                sky_t[index_c] +=char
+
 
 # Functions
-
-
+def find_empty_lines(image):
+    empty_line_indexes = []
+    for index, line in enumerate(image):
+        if line.find("#") < 0:
+            empty_line_indexes.append(index)
+    return(empty_line_indexes)
 
 # Main code
 def main():
-    answer = "Undefined"
+    line_indexes = find_empty_lines(sky)
+    column_indexes = find_empty_lines(sky_t)
+    answer = [line_indexes, column_indexes]
     print("The solution is:",answer)
 
 main()
