@@ -1,10 +1,16 @@
 # Problem scope
 '''
+Part 1: "Focus the reflector"
 Puzzle input is an image. . is empty, O are rocks, # are cubes
 Rocks can roll and will roll as far as possible until they hit an edge or a cube if the platform is tilted
 Rocks add weight to the platform.
 The weight is proportional to the distance away from the opposite edge for each rock.
 The platform is tilted north. What is the weight on the north support edge
+
+Part 2: "Spin cycle"
+The platform is tilted north, west, south, east. This is one spin cycle.
+Run the spin cycle 1,000,000,000 times
+What is the load on the north support beam?
 '''
 
 # Solution sketch
@@ -13,6 +19,10 @@ Need a function that shifts rocks as far as possible
 > Start from the top left, roll rocks until index = 0, or index + 1 has O or #, repeat
 Need a function that calculates weight. Weight is a function of line index and each rock can be calculated individually so:
 > Iterate over all rocks, add their index_max - index value to a counter
+
+Part 2:
+add functions for tilting w, s, e. Run a spin cycle and time it. How long to calculate 1bn cycles?
+If possible, run it. If not then I'll need to think about how to solve this differently...
 '''
 # Variables
 with open("puzzle_input.txt") as file:
