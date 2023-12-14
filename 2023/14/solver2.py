@@ -38,22 +38,36 @@ with open("puzzle_input.txt") as file:
     platform = [[x for x in l] for l in input]
 
 # Functions
-def shift_rocks(image):
-    for l_index, line in enumerate(image):
-        for c_index, char in enumerate(line):
-            if char == "O":
-                search_char=0
-                if l_index > 0: search_char=image[l_index -1][c_index]
-                shift_index = 0
-                # print("rock found")
-                while search_char == "." and l_index - shift_index > 0:
-                    # print("looking for a space...", shift_index)
-                    shift_index += 1
-                    search_char = image[l_index-1-shift_index][c_index]
-                # update image O -> . and .-> O
-                if shift_index > 0:
-                    image[l_index][c_index] = "."
-                    image[l_index - shift_index][c_index] = "O"
+def shift_rocks(image, compass_direction):
+    match compass_direction:
+        case "N":
+            for l_index, line in enumerate(image[::1]):
+                for c_index, char in enumerate(line):
+                    if char == "O":
+                        # print("rock found")
+                        shift_index = 0
+                        while l_index > shift_index and image[l_index -1 -shift_index][c_index] == "." :
+                            # while "not looking over the edge" and "there's a gap": "look at the next row"
+                            shift_index += 1 #shift index is shift -1
+                        if shift_index > 0:
+                            # if "there's a gap at least one away" update image O -> . and .-> O
+                            image[l_index][c_index] = "."
+                            image[l_index - shift_index ][c_index] = "O"
+
+        case "S":
+            for l_index, line in enumerate(image[::-1]):
+                for c_index, char in enumerate(line):
+                    if char == "O":
+                        # print("rock found")
+                        shift_index = 0
+                        while l_index > shift_index and image[98-l_index+shift_index][c_index] == "." :
+                            # while "not looking over the edge" and "there's a gap": "look at the next row"
+                            shift_index += 1
+                        if shift_index > 0:
+                            # if "there's a gap at least one away" update image O -> . and .-> O
+                            image[99-l_index][c_index] = "."
+                            image[99-l_index+shift_index][c_index] = "O"
+
     return(image)
 
 def rotate_platform(image):
@@ -69,7 +83,7 @@ def calculate_weight(image):
     total_weight = 0
     max_weight = len(image)
     for l_index, line in enumerate(image):
-        for c_index, char in enumerate(line):
+        for char in (line):
             if char == "O":
                 weight = max_weight - l_index
                 total_weight += weight
@@ -83,10 +97,14 @@ def output_platform_image(image_matrix):
                 file2.write(line+"\n")
 
 def spin_cycle(platform):
-    print("Shifting once...")
+    start = time.time()
     N_shifted_platform = shift_rocks(platform)
-    print("Rotating...")
+    end = time.time()
+    print("Shift platform time is:", end-start)
+    start = time.time()
     W_oriented_platform = rotate_platform(N_shifted_platform)
+    end = time.time()
+    print("Rotate platform time is:", end-start)
     W_shifted_platform = shift_rocks(W_oriented_platform)
     S_oriented_platform = rotate_platform(W_shifted_platform)
     S_shifted_platform = shift_rocks(S_oriented_platform)
@@ -97,12 +115,14 @@ def spin_cycle(platform):
 
 # Main code
 def main():
-    start = time.time()
-    platform_spun_once = spin_cycle(platform)
-    end = time.time()
-    print("Spin cyle time is:", end-start)
-    # output_platform_image(shifted_platform)
-    load = calculate_weight(platform_spun_once)
+    # platform_spun_once = spin_cycle(platform)
+    # Spin cycle takes 0.015s to complete one cycle
+    # Shift platform takes 0.0017
+    # Rotate platform takes 0.0013
+
+    s_platform = shift_rocks(platform, "S")
+    load = calculate_weight(s_platform)
+    output_platform_image(s_platform)
 
     answer = load
     print("The solution is:",answer)
