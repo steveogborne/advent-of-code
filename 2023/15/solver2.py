@@ -50,26 +50,50 @@ Iterate over all lenses with the maths provided
 with open("puzzle_input.txt") as file:
     input = file.read()
     instructions = input.strip().split(",")
+    for index, instruction in enumerate(instructions):
+        if "=" in instruction:
+            instructions[index] = [instruction[:instruction.index("="):], "=", int(instruction[instruction.index("=")+1::])]
+        if "-" in instruction:
+            instructions[index] = [instruction[:instruction.index("-"):], "-", 0]
+    # instructions now in the form ["label", "-/=", 0/focal length]
 
 # Functions
 
+def my_hash(label):
+    label_list = list(label.encode('ascii'))
+    hash_i = 0
+    for char in label_list:
+        hash_i += char
+        hash_i *= 17
+        hash_i = hash_i %256
+    return(hash_i)
 
 
 # Main code
 def main():
+    boxes = [[] for x in range(256)]
+    # box in boxes has structure [[lens_label, focus_length], [...],...]
     total = 0
-    for instruction in instructions:
-        instruction_list = list(instruction.encode('ascii'))
-        hash_i = 0
-        for char in instruction_list:
-            hash_i += char
-            hash_i *= 17
-            hash_i = hash_i %256
-        total += hash_i
-
+    instruction = instructions[0]
+    match instruction[1]:
+        case "-":
+            box_index = my_hash(instruction[0])
+            for lens_index, lens in enumerate(boxes[box_index]):
+                if lens[0] == instruction[0]:
+                    boxes[box_index].pop(lens_index)
+                    break
+        case "=":
+            box_index = my_hash(instruction[0])
+            for lens_index, lens in enumerate(boxes[box_index]):
+                if lens[0] == instruction[0]:
+                    boxes[box_index][lens_index][1] = instruction[2]
+                    break
+            boxes[box_index].append([instruction[0], instruction[2]])
+    print(boxes)
+    # for instruction in instructions:
+    #     total += my_hash(instruction)
 
     answer = total
     print("The solution is:",answer)
 
-print(instructions[-1])
 main()
