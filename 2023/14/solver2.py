@@ -143,8 +143,25 @@ def find_all(line, char):
         start += 1
 
 test = input[0]
-cube_index = [-1, len(test)]
-for index in list(find_all(test, "#")): cube_index.insert(-1, index)
-print(cube_index)
-test_split = "#".join(["".join(sorted(list(test[cube_index[i]+1:cube_index[i+1]:]))) for i in range(len(cube_index)-1)])
-print(test_split)
+
+# pre-compute cube indexes for lookup
+cube_index = [[-1, len(test)] for line in input]
+for l_index, line in enumerate(input):
+    for index in list(find_all(line, "#")): cube_index[l_index].insert(-1, index)
+
+# String manipulator 1: sorting lists
+start1 = time.time()
+for j, line in enumerate(input):
+    test_split = ["#".join(["".join(sorted(list(line[cube_index[j][i]+1:cube_index[j][i+1]:]))) for i in range(len(cube_index[j])-1)]) for j, line in enumerate(input)]
+end1 = time.time()
+for line in test_split: print(line)
+print(end1 - start1)
+#  Runs in ~0.15s -- waaaaaaay too slow
+
+start2 = time.time()
+test_split2 = ["#".join([string.count(".")*"."+string.count("O")*"O" for string in line.split("#")]) for line in input]
+end2 = time.time()
+for line in test_split2: print(line)
+print(end2-start2)
+# Runs in < 0.001s -- faster than matrix manipulation but only ~x2 faster
+# Much more compact though!
