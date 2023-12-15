@@ -73,7 +73,7 @@ def my_hash(label):
 def main():
     boxes = [{} for x in range(256)]
     # box in boxes has structure {lens_label: focus_length, ...}
-    total = 0
+    # Update the boxes with lenes according to the instructions
     for instruction in instructions:
         box_index = my_hash(instruction[0])
         match instruction[1]:
@@ -81,11 +81,14 @@ def main():
                 if instruction[0] in boxes[box_index].keys(): boxes[box_index].pop(instruction[0])
             case "=": boxes[box_index].update({instruction[0]:instruction[2]})
 
-    print(boxes)
-    # for instruction in instructions:
-    #     total += my_hash(instruction)
+    # Sum the focus power of each lens:
+    focus_power_total = 0
+    for box_index, box in enumerate(boxes):
+        for slot_index, focus_length in enumerate(box.values()):
+            focus_power = (box_index+1)*(slot_index+1)*focus_length
+            focus_power_total += focus_power
 
-    answer = total
+    answer = focus_power_total
     print("The solution is:",answer)
 
 main()
