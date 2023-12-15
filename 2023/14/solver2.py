@@ -36,6 +36,11 @@ import time
 with open("puzzle_input.txt") as file:
     input = file.read().splitlines()
     platform = [[x for x in l] for l in input]
+    rocks = [[li, ci] for li, ln in enumerate(platform) for ci, ch in enumerate(ln) if ch == "O"]
+    [rocks[index].append(index) for index in range(len(rocks))]
+    cubes_in_rows = [[[li,ci] for ci,ch in enumerate(ln) if ch=="#"] for li,ln in enumerate(platform)]
+    # for x in cubes_in_rows: print(x)
+
 
 # Functions
 def shift_rocks(image):
@@ -72,9 +77,9 @@ def calculate_weight(image):
     return(total_weight)
 
 
-def output_platform_image(image_matrix):
+def output_platform_image(image_matrix, dir):
         image_str = ["".join(line) for line in image_matrix]
-        with open("platform_output.txt", "w") as file2:
+        with open(dir, "w") as file2:
             for line in image_str:
                 file2.write(line+"\n")
 
@@ -89,23 +94,27 @@ def spin_cycle(platform):
     N_oriented_platform = rotate_platform(E_shifted_platform)
     return(N_oriented_platform)
 
-def check_difference(image1, image2):
+def check_difference(prev_image, cur_image):
     differences = 0
-    for l_index, line in enumerate(image1):
+    diff_image = cur_image.copy()
+    for l_index, line in enumerate(prev_image):
         for c_index, char in enumerate(line):
-            if char != image2[l_index][c_index]:
+            if char != cur_image[l_index][c_index]:
                 differences += 1
-    return(differences)
+                diff_image[l_index][c_index] = "X"
+    return(differences, diff_image)
 
 # Main code
 def main():
     new_platform = platform.copy()
-    for x in range(10000):
+    y=100
+    for x in range(y):
         new_new_platform = spin_cycle(new_platform)
-        weight = calculate_weight(new_new_platform)
-        if x%100 == 0:
-            diff = check_difference(new_new_platform, new_platform)
-            print("Spin",x,"differences",diff, "weight", weight)
+        # weight = calculate_weight(new_new_platform)
+        # if x>0 and x%(y-1) == 0:
+        #     diff = check_difference(new_platform, new_new_platform)
+        #     output_platform_image(diff[1], "diff_platform_output.txt")
+        #     print("Spin",x,"differences",diff[0], "weight", weight)
         new_platform = new_new_platform
 
 
@@ -116,11 +125,26 @@ def main():
     # Therefore don't run 1,000,000,000 iterations!
 
     # load = calculate_weight(platform_spun_once)
-    output_platform_image(new_platform)
+    output_platform_image(new_platform, "platform_output.txt")
 
     #answer = diff
     #print("The solution is:",answer)
-start = time.time()
-main()
-end = time.time()
-print("Time elapsed for 100,000 cycles:",end-start)
+# start = time.time()
+# main()
+# end = time.time()
+# print("Time elapsed for 100,000 cycles:",end-start)
+
+def find_all(line, char):
+    start = 0
+    while True:
+        start = line.find(char, start)
+        if start == -1: return
+        yield start
+        start += 1
+
+test = input[0]
+cube_index = [-1, len(test)]
+for index in list(find_all(test, "#")): cube_index.insert(-1, index)
+print(cube_index)
+test_split = "#".join(["".join(sorted(list(test[cube_index[i]+1:cube_index[i+1]:]))) for i in range(len(cube_index)-1)])
+print(test_split)
