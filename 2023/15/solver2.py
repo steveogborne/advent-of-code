@@ -71,24 +71,16 @@ def my_hash(label):
 
 # Main code
 def main():
-    boxes = [[] for x in range(256)]
-    # box in boxes has structure [[lens_label, focus_length], [...],...]
+    boxes = [{} for x in range(256)]
+    # box in boxes has structure {lens_label: focus_length, ...}
     total = 0
-    instruction = instructions[0]
-    match instruction[1]:
-        case "-":
-            box_index = my_hash(instruction[0])
-            for lens_index, lens in enumerate(boxes[box_index]):
-                if lens[0] == instruction[0]:
-                    boxes[box_index].pop(lens_index)
-                    break
-        case "=":
-            box_index = my_hash(instruction[0])
-            for lens_index, lens in enumerate(boxes[box_index]):
-                if lens[0] == instruction[0]:
-                    boxes[box_index][lens_index][1] = instruction[2]
-                    break
-            boxes[box_index].append([instruction[0], instruction[2]])
+    for instruction in instructions:
+        box_index = my_hash(instruction[0])
+        match instruction[1]:
+            case "-":
+                if instruction[0] in boxes[box_index].keys(): boxes[box_index].pop(instruction[0])
+            case "=": boxes[box_index].update({instruction[0]:instruction[2]})
+
     print(boxes)
     # for instruction in instructions:
     #     total += my_hash(instruction)
