@@ -55,6 +55,13 @@ for index, line in enumerate(data):
 
 # Functions
 
+# Find the first location a # block can be placed
+def place_group(line):
+    target_row = line[2]
+    for target_group in target_row:
+        first_index = 0 ### make this updateable
+        if line[0][0][first_index:len(target_group)+1:] == "#"*len(target_group)+"." or line[0][0][:len(target_group)+1:] == "#"*len(target_group)+"?":
+            print("fits so far...")
 
 
 # Main code
