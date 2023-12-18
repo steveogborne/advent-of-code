@@ -16,25 +16,26 @@ Need a function that updates an image of energised tiles (or otherwise tracks en
 Need a function that counts energised tiles
 '''
 # Variables
-with open("puzzle_input.txt") as file:
-    mirror_map = file.read().splitlines()
-    # max_c = len(mirror_map[0]) - 1
-    # max_l = len(mirror_map) - 1
-    max_c, max_l = 9,9
-    heat_map = [["." for char in line] for line in mirror_map]
-
 test_input = '''.|...\....
 |.-.\.....
 .....|-...
 ........|.
 ..........
 .........\\
-..../.\\..
+..../.\\\..
 .-.-/..|..
 .|....-|.\\
 ..//.|....
 '''
-test_input = test_input.splitlines()
+test_map = test_input.splitlines()
+
+with open("puzzle_input.txt") as file:
+    mirror_map = file.read().splitlines()
+    max_c = len(mirror_map[0]) - 1
+    max_l = len(mirror_map) - 1
+    heat_map = [["." for char in line] for line in mirror_map]
+
+
 
 class Beam:
     def __init__(self, l, c, heading):
@@ -63,24 +64,14 @@ class Beam:
 
 # Functions
 
-def new_beam(bims, l, c, heading):
-    # beams have names b_X where X is their index
-    # Get last beam name
-    last_name_index = int(list(bims.keys())[-1].split("_")[-1])
-    new_name = "b_"+str(last_name_index +1)
-    bims[new_name] = Beam(l, c, heading)
-    return bims
-
 def step_beams(beams, mirror_map):
     # beams is list of Beam objects
     new_beams = []
-    go_flag = False
     for b in beams:
         heat_map[b.l][b.c] = "#" # energise tile
         match b.heading:
             case "X": continue
             case "N":
-                go_flag = True
                 match mirror_map[b.l][b.c]:
                     case "|": b.move()
                     case ".": b.move()
@@ -90,7 +81,6 @@ def step_beams(beams, mirror_map):
                         if b.c!=0: new_beams.append(Beam(b.l, b.c-1, "W"))
                         b.heading = "E"; b.move()
             case "E":
-                go_flag = True
                 match mirror_map[b.l][b.c]:
                     case "-": b.move()
                     case ".": b.move()
@@ -100,7 +90,6 @@ def step_beams(beams, mirror_map):
                         if b.l!=0: new_beams.append(Beam(b.l-1, b.c, "N"))
                         b.heading = "S"; b.move()
             case "S":
-                go_flag = True
                 match mirror_map[b.l][b.c]:
                     case "|": b.move()
                     case ".": b.move()
@@ -110,7 +99,6 @@ def step_beams(beams, mirror_map):
                         if b.c!=0: new_beams.append(Beam(b.l, b.c-1, "W"))
                         b.heading = "E"; b.move()
             case "W":
-                go_flag = True
                 match mirror_map[b.l][b.c]:
                     case "-": b.move()
                     case ".": b.move()
@@ -120,25 +108,22 @@ def step_beams(beams, mirror_map):
                         if b.l!=0: new_beams.append(Beam(b.l-1, b.c, "N"))
                         b.heading = "S"; b.move()
     for beam in new_beams: beams.append(beam)
-    return beams, go_flag
+    return beams
 
 
 # Main code
 def main():
     beams = [Beam(0,0,"E")]
-    print(".0123456789")
-    for index, line in enumerate(test_input): print(str(index)+line)
-    print("\n")
-    go_flag = True
-    while go_flag:
-        beams, go_flag = step_beams(beams, test_input)
-        print([beam.display() for beam in beams])
-    answer = "Undefined"
+    buffer = 50
+    while buffer >0:
+        energised_tiles = sum([line.count("#") for line in heat_map])
+        # for line in heat_map:print("".join(line))
+        beams = step_beams(beams, mirror_map)
+        energised_tiles2 = sum([line.count("#") for line in heat_map])
+        # print(energised_tiles, energised_tiles2)
+        # print([beam.display() for beam in beams])
+        if energised_tiles2 - energised_tiles == 0: buffer-=1
+    answer = energised_tiles
     print("The solution is:",answer)
 
 main()
-# beams = {"b_0": Beam(0,0,"E")}
-# beams["b_1"] = Beam(0,1,"S")
-# # last_name_index = int(beams.keys()[-1].__name__.split("_")[-1])
-# last_name_index = beams.keys()[0]
-# print(last_name_index)
