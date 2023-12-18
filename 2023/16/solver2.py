@@ -36,11 +36,11 @@ test_input = '''.|...\....
 test_map = test_input.splitlines()
 
 with open("puzzle_input.txt") as file:
-    mirror_map = file.read().splitlines()
-    mirror_map = [[char for char in line] for line in mirror_map]
-    max_c = len(mirror_map[0]) - 1
-    max_l = len(mirror_map) - 1
-    heat_map = [["." for char in line] for line in mirror_map]
+    mirror_map_0 = file.read().splitlines()
+    mirror_map_0 = [[char for char in line] for line in mirror_map_0]
+    max_c = len(mirror_map_0[0]) - 1
+    max_l = len(mirror_map_0) - 1
+
 
 
 
@@ -71,7 +71,7 @@ class Beam:
 
 # Functions
 
-def step_beams(beams, mirror_map):
+def step_beams(beams, mirror_map, heat_map):
     # beams is list of Beam objects
     new_beams = []
     stopped = True
@@ -172,16 +172,38 @@ def step_beams(beams, mirror_map):
     for beam in new_beams: beams.append(beam)
     return beams, stopped
 
+def calculate_heat(start_beam):
+    beams = start_beam
+    with open("puzzle_input.txt") as file:
+        mirror_map = file.read().splitlines()
+        mirror_map = [[char for char in line] for line in mirror_map]
+        max_c = len(mirror_map[0]) - 1
+        max_l = len(mirror_map) - 1
+    heat_map = [["." for char in line] for line in mirror_map]
+    stopped = False
+    while not stopped:
+        beams, stopped = step_beams(beams, mirror_map, heat_map)
+    heat = sum([line.count("#") for line in heat_map])
+    return heat
 
 # Main code
 def main():
-    beams = [Beam(0,0,"E")]
-    stopped = False
-    while not stopped:
-        beams, stopped = step_beams(beams, mirror_map)
-    heat = sum([line.count("#") for line in heat_map])
+    max_heat = 0
+    start_beams = []
+    for index, line in enumerate(mirror_map_0):
+        start_beams.append(Beam(index,0,"E"))
+        start_beams.append(Beam(index,max_c,"W"))
+    for index, char in enumerate(mirror_map_0[0]):
+        start_beams.append(Beam(0,index,"S"))
+        start_beams.append(Beam(max_l,index,"N"))
+    print(len(start_beams))
 
-    answer = heat
+    for beam in start_beams:
+        heat = calculate_heat([beam])
+        # print(heat)
+        if heat > max_heat: max_heat = heat
+
+    answer = max_heat
     print("The solution is:",answer)
 
 start = time.time()
