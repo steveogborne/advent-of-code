@@ -16,6 +16,8 @@ Need a function that updates an image of energised tiles (or otherwise tracks en
 Need a function that counts energised tiles
 '''
 # Variables
+
+import time
 test_input = '''.|...\....
 |.-.\.....
 .....|-...
@@ -126,4 +128,7 @@ def main():
     answer = energised_tiles
     print("The solution is:",answer)
 
+start = time.time()
 main()
+end = time.time()
+print(end-start)
