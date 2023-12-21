@@ -43,28 +43,59 @@ with open("puzzle_input.txt") as file:
 
 
 # Functions
-def shift_rocks(image):
-    for l_index, line in enumerate(image):
-        for c_index, char in enumerate(line):
-            if char == "O":
-                # print("rock found")
-                shift_index = 0
-                while l_index > shift_index and image[l_index -1 -shift_index][c_index] == "." :
-                    # while "not looking over the edge" and "there's a gap": "look at the next row"
-                    shift_index += 1 #shift index is shift -1
-                if shift_index > 0:
-                    # if "there's a gap at least one away" update image O -> . and .-> O
-                    image[l_index][c_index] = "."
-                    image[l_index - shift_index ][c_index] = "O"
+def shift_rocks_NS(image, direction):
+    match direction:
+        case "N":
+            for l_index, line in enumerate(image):
+                for c_index, char in enumerate(line):
+                    if char == "O":
+                        # print("rock found")
+                        shift_index = 0
+                        while l_index > shift_index and image[l_index -1 -shift_index][c_index] == "." :
+                            # while "not looking over the edge" and "there's a gap": "look at the next row"
+                            shift_index += 1 #shift index is shift -1
+                        if shift_index > 0:
+                            # if "there's a gap at least one away" update image O -> . and .-> O
+                            image[l_index][c_index] = "."
+                            image[l_index - shift_index ][c_index] = "O"
+        case "S":
+            for l_index, line in enumerate(reversed(image)):
+                for c_index, char in enumerate(line):
+                    if char == "O":
+                        # print("rock found")
+                        shift_index = 0
+                        while l_index > shift_index and image[len(image) -l_index+shift_index][c_index] == "." :
+                            # while "not looking over the edge" and "there's a gap": "look at the next row"
+                            shift_index += 1 #shift index is shift -1
+                        if shift_index > 0:
+                            # if "there's a gap at least one away" update image O -> . and .-> O
+                            image[len(image)-1 - l_index][c_index] = "."
+                            image[len(image)-1 - l_index + shift_index ][c_index] = "O"
     return(image)
+    # Shift rocks NS takes 0.0017
+
+def shift_rocks_EW(image, direction):
+    match direction:
+        case "E": return [list("#".join([string.count(".")*"."+string.count("O")*"O" for string in str(line).split("#")])) for line in image ]
+        case "W": return [list("#".join([string.count("O")*"O"+string.count(".")*"." for string in str(line).split("#")])) for line in image]
+    # Runs in < 0.001s -- faster than matrix manipulation but only ~x2 faster
+    # Much more compact though!
+
 
 def rotate_platform(image):
     # We need to rotate the platform CW if we are to simulate tilting in an ACW order
     # Starting from the bottom line, put that line into the first column... repeat
     new_image = [[] for char in image[0]]
-    for line in image[::-1]:
+    for line in reversed(image):
         for c_index, char in enumerate(line):
             new_image[c_index].append(char)
+    return(new_image)
+
+def rotate_platform_str(image):
+    new_image = ["" for char in image[0]]
+    for line in image[::-1]:
+        for c_index, char in enumerate(line):
+            new_image[c_index]+=char
     return(new_image)
 
 def calculate_weight(image):
@@ -83,16 +114,75 @@ def output_platform_image(image_matrix, dir):
             for line in image_str:
                 file2.write(line+"\n")
 
-def spin_cycle(platform):
-    N_shifted_platform = shift_rocks(platform)
+def spin_cycle_A(platform):
+    N_shifted_platform = shift_rocks_NS(platform, "N")
     W_oriented_platform = rotate_platform(N_shifted_platform)
-    W_shifted_platform = shift_rocks(W_oriented_platform)
+    W_shifted_platform = shift_rocks_NS(W_oriented_platform, "N")
     S_oriented_platform = rotate_platform(W_shifted_platform)
-    S_shifted_platform = shift_rocks(S_oriented_platform)
+    S_shifted_platform = shift_rocks_NS(S_oriented_platform, "N")
     E_oriented_platform = rotate_platform(S_shifted_platform)
-    E_shifted_platform = shift_rocks(E_oriented_platform)
+    E_shifted_platform = shift_rocks_NS(E_oriented_platform, "N")
     N_oriented_platform = rotate_platform(E_shifted_platform)
     return(N_oriented_platform)
+    # Spin cycle 1 takes 0.015s to complete one cycle
+    # Spin cycle A now takes 0.97s for 100 cycles
+    # Load after 100 cycles 100680
+
+def spin_cycle_B(platform):
+    N_platform = shift_rocks_NS(platform, "N")
+    W_platform = shift_rocks_EW(N_platform, "W")
+    S_platform = shift_rocks_NS(W_platform, "S")
+    E_platform = shift_rocks_EW(S_platform, "E")
+    return(E_platform)
+    # Spin cycle B takes 0.70s for 100 cycles
+    # Load after 100 cycles 100680
+
+def spin_cycle_C(platform):
+    # Shift North
+    for l_index, line in enumerate(platform):
+        for c_index, char in enumerate(line):
+            if char == "O":
+                # print("rock found")
+                shift_index = 0
+                while l_index > shift_index and platform[l_index -1 -shift_index][c_index] == "." :
+                    # while "not looking over the edge" and "there's a gap": "look at the next row"
+                    shift_index += 1 #shift index is shift -1
+                if shift_index > 0:
+                    # if "there's a gap at least one away" update platform O -> . and .-> O
+                    platform[l_index][c_index] = "."
+                    platform[l_index - shift_index ][c_index] = "O"
+    # Shift West
+    platform = [list("#".join([string.count("O")*"O"+string.count(".")*"." for string in "".join(line).split("#")])) for line in platform]
+    # Shift South
+    for l_index, line in enumerate(reversed(platform)):
+        for c_index, char in enumerate(line):
+            if char == "O":
+                # print("rock found")
+                shift_index = 0
+                while l_index > shift_index and platform[len(platform) -l_index +shift_index][c_index] == "." :
+                    # while "not looking over the edge" and "there's a gap": "look at the next row"
+                    shift_index += 1 #shift index is shift -1
+                if shift_index > 0:
+                    # if "there's a gap at least one away" update platform O -> . and .-> O
+                    platform[len(platform) -1 -l_index][c_index] = "."
+                    platform[len(platform) -1 -l_index +shift_index ][c_index] = "O"
+    # Shift East
+    return [list("#".join([string.count(".")*"."+string.count("O")*"O" for string in "".join(line).split("#")])) for line in platform]
+    # 0.61s for 100 cycles
+    # Load after 100 cycles is 100680
+
+def spin_cycle_D(platform):
+    platform_rW = rotate_platform_str(platform)
+    platform_sN = ["#".join([string.count(".")*"."+string.count("O")*"O" for string in line.split("#")]) for line in platform_rW]
+    platform_rS = rotate_platform_str(platform_sN)
+    platform_sW = ["#".join([string.count(".")*"."+string.count("O")*"O" for string in line.split("#")]) for line in platform_rS]
+    platform_rE = rotate_platform_str(platform_sW)
+    platform_sS = ["#".join([string.count(".")*"."+string.count("O")*"O" for string in line.split("#")]) for line in platform_rE]
+    platform_rN = rotate_platform_str(platform_sS)
+    platform_sE = ["#".join([string.count(".")*"."+string.count("O")*"O" for string in line.split("#")]) for line in platform_rN]
+    return platform_sE
+    # 0.72s for 100 cycles
+    # Load after 100 cycles 100680
 
 def check_difference(prev_image, cur_image):
     differences = 0
@@ -104,36 +194,6 @@ def check_difference(prev_image, cur_image):
                 diff_image[l_index][c_index] = "X"
     return(differences, diff_image)
 
-# Main code
-def main():
-    new_platform = platform.copy()
-    y=100
-    for x in range(y):
-        new_new_platform = spin_cycle(new_platform)
-        # weight = calculate_weight(new_new_platform)
-        # if x>0 and x%(y-1) == 0:
-        #     diff = check_difference(new_platform, new_new_platform)
-        #     output_platform_image(diff[1], "diff_platform_output.txt")
-        #     print("Spin",x,"differences",diff[0], "weight", weight)
-        new_platform = new_new_platform
-
-
-
-    # Spin cycle takes 0.015s to complete one cycle
-    # Shift platform takes 0.0017
-    # Rotate platform takes 0.0013
-    # Therefore don't run 1,000,000,000 iterations!
-
-    # load = calculate_weight(platform_spun_once)
-    output_platform_image(new_platform, "platform_output.txt")
-
-    #answer = diff
-    #print("The solution is:",answer)
-# start = time.time()
-# main()
-# end = time.time()
-# print("Time elapsed for 100,000 cycles:",end-start)
-
 def find_all(line, char):
     start = 0
     while True:
@@ -142,26 +202,28 @@ def find_all(line, char):
         yield start
         start += 1
 
-test = input[0]
+# Main code
+def main():
+    new_platform = platform.copy()
+    y=100
+    for x in range(y):
+        new_new_platform = spin_cycle_D(new_platform)
+        # weight = calculate_weight(new_new_platform)
+        # if x>0 and x%(y-1) == 0:
+        #     diff = check_difference(new_platform, new_new_platform)
+        #     output_platform_image(diff[1], "diff_platform_output.txt")
+        #     print("Spin",x,"differences",diff[0], "weight", weight)
+        new_platform = new_new_platform
 
-# pre-compute cube indexes for lookup
-cube_index = [[-1, len(test)] for line in input]
-for l_index, line in enumerate(input):
-    for index in list(find_all(line, "#")): cube_index[l_index].insert(-1, index)
+    # Rotate platform takes 0.0013
+    # Therefore don't run 1,000,000,000 iterations!
 
-# String manipulator 1: sorting lists
-start1 = time.time()
-for j, line in enumerate(input):
-    test_split = ["#".join(["".join(sorted(list(line[cube_index[j][i]+1:cube_index[j][i+1]:]))) for i in range(len(cube_index[j])-1)]) for j, line in enumerate(input)]
-end1 = time.time()
-for line in test_split: print(line)
-print(end1 - start1)
-#  Runs in ~0.15s -- waaaaaaay too slow
+    load = calculate_weight(new_platform)
+    output_platform_image(new_platform, "platform_output_D.txt")
 
-start2 = time.time()
-test_split2 = ["#".join([string.count(".")*"."+string.count("O")*"O" for string in line.split("#")]) for line in input]
-end2 = time.time()
-for line in test_split2: print(line)
-print(end2-start2)
-# Runs in < 0.001s -- faster than matrix manipulation but only ~x2 faster
-# Much more compact though!
+    answer = load
+    print("The solution is:",answer)
+start = time.time()
+main()
+end = time.time()
+print("Time elapsed for 100 cycles:",end-start)
