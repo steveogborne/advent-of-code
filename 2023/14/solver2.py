@@ -205,21 +205,23 @@ def find_all(line, char):
 # Main code
 def main():
     new_platform = platform.copy()
-    y=100
+    y=10000
     for x in range(y):
-        new_new_platform = spin_cycle_D(new_platform)
+        new_new_platform = spin_cycle_C(new_platform)
         # weight = calculate_weight(new_new_platform)
         # if x>0 and x%(y-1) == 0:
         #     diff = check_difference(new_platform, new_new_platform)
         #     output_platform_image(diff[1], "diff_platform_output.txt")
         #     print("Spin",x,"differences",diff[0], "weight", weight)
         new_platform = new_new_platform
+        if x> 9990:
+            print(calculate_weight(new_platform))
 
     # Rotate platform takes 0.0013
     # Therefore don't run 1,000,000,000 iterations!
 
     load = calculate_weight(new_platform)
-    output_platform_image(new_platform, "platform_output_D.txt")
+    # output_platform_image(new_platform, "platform_output_D.txt")
 
     answer = load
     print("The solution is:",answer)
