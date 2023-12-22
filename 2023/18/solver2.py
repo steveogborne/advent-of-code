@@ -26,35 +26,50 @@ Part 2:
 Oh well lets start from scratch!
 I assuuuuume the map is going to be so big now that computing the outline and fill step by step will take way too long.
 Probably need to map corner coordinates. Then calculate infill by doing maths on coordinates line by line
+Create new instructions parser
 Use instructions to create a list of vertices.
 Sort vertices by line
 Iterate over canvas height, interpolating fill from vertices
 '''
 # Variables
-with open("puzzle_input.txt") as file:
+with open("test_input.txt") as file:
     input = file.read().splitlines()
-    instructions = [[ line.split(" ")[0] , int(line.split(" ")[1]) , line.split(" ")[2][1:-1:] ] for line in input]
-    # for line in instructions: print(line)
+    instructions = []
+    for line in input:
+        direction_int = int(line.split(" ")[2][-2])
+        match direction_int:
+            case 0: direction = "R"
+            case 1: direction = "D"
+            case 2: direction = "L"
+            case 3: direction = "U"
+        distance = int(line.split(" ")[2][2:-2:],16)
+        instructions.append([direction, distance])
+    for line in instructions: print(line)
 
-# Establish_canvas
+def establish_canvas():
     canvas_u = 0
     canvas_l = 0
     canvas_r = 0
     canvas_d = 0
     pos = [0,0]
+    canvas = [[0,0]]
     for line in instructions:
         match line[0]:
             case "U":
                 pos[1] -= line[1] # indexes are +ve downwards!
+                canvas.append([pos[0],pos[1]])
                 if pos[1] < canvas_u: canvas_u = pos[1]
             case "L":
                 pos[0] -= line[1]
+                canvas.append([pos[0],pos[1]])
                 if pos[0] < canvas_l: canvas_l = pos[0]
             case "R":
                 pos[0] += line[1]
+                canvas.append([pos[0],pos[1]])
                 if pos[0] > canvas_r: canvas_r = pos[0]
             case "D":
                 pos[1] += line[1] # indexes are +ve downwards!
+                canvas.append([pos[0],pos[1]])
                 if pos[1] > canvas_d: canvas_d = pos[1]
     # print(pos) # check return to start
     # print(canvas_u, canvas_l, canvas_r, canvas_d) # observe max deltas from start in all directions
@@ -62,12 +77,11 @@ with open("puzzle_input.txt") as file:
     height = canvas_d - canvas_u
     start_pos = [0 - canvas_u, 0 - canvas_l] # set start point such that canvas origin is at 0-index
     print(width, height, start_pos)
-
-    canvas = [["." for x in range(width+1)] for y in range(height+1)]
-    # for line in canvas: print("".join(line))
+    for vertice in canvas: print(vertice)
+    return canvas, start_pos
 
 # Functions
-def paint_outline():
+def paint_outline(canvas, start_pos):
     pos = start_pos
     for line in instructions:
         count = 0
@@ -81,8 +95,9 @@ def paint_outline():
             canvas[pos[0]][pos[1]] = "#"
             # print(pos)
             count +=1
+    return canvas
 
-def paint_infill():
+def paint_infill(canvas, start_pos):
     # Visual inspection of test_input and puzzle_input shows that the instructions travel CW around the outline
     # Therefore inside is to the right of up
     pos = start_pos
@@ -105,13 +120,14 @@ def paint_infill():
                     case "D": pos[0] +=1
                 # print(pos)
                 count +=1
+    return canvas
 
 def output_canvas(canvas, dir):
         with open(dir, "w") as file2:
             for line in canvas:
                 file2.write("".join(line)+"\n")
 
-def count_holes():
+def count_holes(canvas):
     count = 0
     for line in canvas:
         count += line.count("#")
@@ -119,11 +135,12 @@ def count_holes():
 
 # Main code
 def main():
-    paint_outline()
-    paint_infill()
-    output_canvas(canvas, "puzzle_output.txt")
-    area = count_holes()
-    answer = area
+    canvas, start_pos = establish_canvas()
+    # canvas = paint_outline(canvas, start_pos)
+    # canvas = paint_infill(canvas, start_pos)
+    # canvas = output_canvas(canvas, "puzzle_output.txt")
+    # area = count_holes(canvas)
+    answer = "Undefined"
     print("The solution is:",answer)
 
 main()
