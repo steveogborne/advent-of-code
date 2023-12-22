@@ -6,6 +6,12 @@ Create a map of the dig site. "." is level ground. "#" is a dug hole
 Start with the outline as specified by the dig instructions
 Fill in the outline with dug holes
 Count the dug holes
+
+Part 2 the hole is much bigger, what a surprise
+The colour code is actually the instruction code
+First 5 hexadecimal numbers are teh distance, the last hexadecimal number is the direction:
+0 means R, 1 means D, 2 means L, and 3 means U
+What is the actual area?
 '''
 
 # Solution sketch
@@ -15,6 +21,14 @@ Create canvas /
 Output to file /
 Trace outline by following instructions /
 Fill inside using fill algorithm from chasing metal squirrels or something else
+
+Part 2:
+Oh well lets start from scratch!
+I assuuuuume the map is going to be so big now that computing the outline and fill step by step will take way too long.
+Probably need to map corner coordinates. Then calculate infill by doing maths on coordinates line by line
+Use instructions to create a list of vertices.
+Sort vertices by line
+Iterate over canvas height, interpolating fill from vertices
 '''
 # Variables
 with open("puzzle_input.txt") as file:
