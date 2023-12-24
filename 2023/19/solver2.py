@@ -8,6 +8,9 @@ Workflows have rules corresponding to the part ratings and either:
 All parts that are accepted are given a rating which is the sum of their individual ratings
 The answer is the sum of all the total ratings of all accpeted parts
 
+Part 2:
+Each of the four ratings can have a value 1<=v<=4000
+How many distinct combinations of ratings will be accepted by the workflows?
 '''
 
 # Solution sketch
