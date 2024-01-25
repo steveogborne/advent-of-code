@@ -6,7 +6,7 @@ Nonagrams
 # Solution sketch
 '''
 Input file and split into a row string and group list /
-Split row by . to give gontiguous regions as a list
+Split row by . to give contiguous regions as a list
 Compare the number of lists elements in each
 If equal move to the arrangement calculation
 If not equal calculate what could go where..?
@@ -31,46 +31,87 @@ Approach 3. Look for #
 Count missing # and . from known # total and given #
 Replace ? with # and remaining ? with . Split row by dot - is this equivalent to required set? If yes count it, if not move on!
 '''
+# Libraries
+from math import factorial
+from itertools import combinations
+
 # Variables
 with open("puzzle_input.txt") as file:
     raw_input = file.read().splitlines()
 
 # Remove known "." and split into sections
-data = [[[x for x in line.split(" ")[0].split(".") if x], [int(y) for y in line.split(" ")[1].split(",")]] for line in raw_input]
+data = [[".".join([x for x in line.split(" ")[0].split(".") if x]), [int(y) for y in line.split(" ")[1].split(",")]] for line in raw_input]
 
-# Create a target row and collect some data
+sample_data = data[:10]
+
+# Add some useful stuff to the lines of inputs
 for line in data:
-    line.append(["#"*group for group in line[1]]) # target row representation
-    # line.append(len(line[1]) - len(line[0])) # number of missing groups G
-    miss_func_spr = sum(line[1]) - sum([x.count("#") for x in line[0]]) # number of missing functional springs #
-    line.append( miss_func_spr)
-    no_unk = sum([x.count("?") for x in line[0]]) # number of unknown conditions ? = count(?)
-    line.append(no_unk)
-    miss_dam_spr = no_unk - miss_func_spr # Number of missing damaged strings . = (? -#)
-    line.append(miss_dam_spr)
+    # Create target row representation in line[2]
+    line.append(".".join(["#"*group for group in line[1]]))
 
-# Test on a sample of lines
-for index, line in enumerate(data):
-    if index < 10: print(line[0],line[1],line[2],line[3],line[4],line[5])
+    # Line stats
+    damaged_known = line[0].count("#")
+    damaged_target = line[2].count("#")
+    damaged_toplace = damaged_target - damaged_known
+    gaps = line[0].count("?")
+
+    # Gap indexes
+    gap_indexes = [i for i, x in enumerate(line[0]) if x == "?"]
+    line.append(gap_indexes) # line[3]
+
+    # How many ways to place r damaged springs in n gaps?
+    # Naive combinations: choose r locations from n positions (Does not take into account blocking)
+    n = gaps
+    r = damaged_toplace
+    naive_combinations = int(factorial(n) / factorial(r) / factorial(n-r))
+
+    # Add useful stats to line
+    line.append(damaged_toplace) # line[4]
+    line.append(gaps) # line[5]
+    line.append(naive_combinations) # line[6]
 
 # Functions
 
-# Find the first location a # block can be placed
-def place_group(line):
-    target_row = line[2]
-    for target_group in target_row:
-        first_index = 0 ### make this updateable
-        if line[0][0][first_index:len(target_group)+1:] == "#"*len(target_group)+"." or line[0][0][:len(target_group)+1:] == "#"*len(target_group)+"?":
-            print("fits so far...")
+# Take an incomplete record, a set of spring placement combinations and a target record
+# Return number of correct combinations
+def test_placements(combos, field, target):
+    field_0 = field # starting string for spring layout
+    correct_combinations = 0
+    for combo in combos:
+        trial_field = field_0
+        for index in combo:
+            # swap ? for # at index
+            trial_field = trial_field[:index]+"#"+trial_field[index+1:]
+        # swap remaining ? for .
+        trial_field = trial_field.replace("?",".")
+        # strip redundant .
+        trial_field = ".".join([x for x in trial_field.split(".") if x])
+        # test if trial_field matches target
+        if trial_field == target:
+            correct_combinations = correct_combinations +1
+        #     print(trial_field,"is a match")
+        # else:
+        #     print(trial_field,"is not a match")
+    return correct_combinations
 
+# Test on a sample of lines
+def test_code():
+    for index, line in enumerate(data):
+        if index < 1:
+            # print(line)
+            print(line[0],line[1],line[2],line[3],"--",line[4],"springs in",line[5],"gaps is",line[6],"combinations")
+            trial_placements = combinations(line[3], line[4])
+            print(test_placements(trial_placements, line[0], line[2]), "combinations fit")
 
 # Main code
 def main():
+    # test_code()
     total_arrangements = 0
-    # for line in data:
-    #     if len(line[0]) == len(line[1]):
-    #         print("Groups match")
-    #     else: print("Groups don't match")
+    for line in data:
+        trial_placements = combinations(line[3], line[4])
+        arrangements = test_placements(trial_placements, line[0], line[2])
+        total_arrangements = total_arrangements + arrangements
+        print(line[0],line[1],line[2],line[3],"--",line[4],"springs in",line[5],"gaps is",line[6],"potential combinations with", arrangements, "correct arrangements")
 
     print("The solution is:",total_arrangements)
 
