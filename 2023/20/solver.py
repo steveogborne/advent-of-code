@@ -42,9 +42,10 @@ with open("puzzle_input.txt") as file:
 
 
 class Broadcaster():
-    def __init__(self, name="broadcaster", outputs=None) -> None:
+    def __init__(self, name="broadcaster", outputs=None, state=0) -> None:
         self.name = name
         self.outputs = outputs if outputs is not None else []
+        self.state = state
 
     def __str__(self) -> str:
         return f"{self.name} -> {self.outputs}"
@@ -81,24 +82,24 @@ class FlipFlop():
                 return ValueError
 
 class Conjunction():
-    def __init__(self, name: str, outputs: list = None, memory: dict = None) -> None:
+    def __init__(self, name: str, outputs: list = None, state: dict = None) -> None:
         self.name = name
-        self.memory = memory if memory is not None else {}
+        self.state = state if state is not None else {}
         self.outputs = outputs if outputs is not None else []
 
     def __str__(self) -> str:
-        return f"{self.name} {self.memory} -> {self.outputs}"
+        return f"{self.name} {self.state} -> {self.outputs}"
 
     def add_source(self, source: str) -> None:
-        self.memory[source] = 0
+        self.state[source] = 0
 
     def status(self) -> dict:
-        return self.memory
+        return self.state
 
     def trigger(self, input: bool, source: str) -> bool:
-        self.memory[source] = input
+        self.state[source] = input
         pulse = 0
-        for state in self.memory.values():
+        for state in self.state.values():
             if state == 0:
                 pulse = 1
                 break
@@ -122,6 +123,7 @@ def preload(input: list):
                 # print("Conjunction {} added".format(name))
 
     # Load flipflops updating conjunction inputs
+    flipflops_temp = []
     for line in input:
         if line[0] == "%":
             name = line.split("->")[0].strip(" ")[1:]
@@ -129,44 +131,84 @@ def preload(input: list):
             for module in modules:
                 if module.name in outputs:
                     module.add_source(name)
-            modules.append(FlipFlop(name, outputs))
+            flipflops_temp.append(FlipFlop(name, outputs))
             # print("Flipflop {} added".format(name))
 
+    for ff in flipflops_temp:
+        modules.append(ff)
+
     # Check all modules created successfully
-    if len(modules) == len(input): print("\nAll modules accounted for\n")
+    if len(modules) == len(input): print("\nAll modules accounted for")
     else: print("\nModule count error\n")
 
     return modules
 
+def print_history(history: list) -> None:
+    print("\n--- Check records: ---")
+    for line in history: print(f"{line[0]} -({line[1]})-> {line[2]}")
 
+def print_module_states(modules: list) -> None:
+    print("\n--- Module state: ---")
+    for module in modules: print(type(module).__name__, module)
+
+def get_state(modules: list) -> list:
+    state = []
+    for module in modules:
+        state.append((module.name, module.state))
+    return state
 
 # Main code
 def main():
+    # Create modules from puzzle input
     modules = preload(input)
-    for module in modules: print(type(module).__name__, module)
+    print_module_states(modules)
 
-    queue = [("button", 0, "broadcaster")]
-    history = []
-    lows = 1
+    # Set initial state and counters
+    initial_state = get_state(modules)
+    lows = 0
     highs = 0
+    presses = 0
+    cycle_counts = {}
+    cycle_end = False
+    history = []
 
-    print("\nPress button once, singals propagate...\n")
+    while not cycle_end and presses <1000:
+        # Initialise signal queue
+        queue = [("button", 0, "broadcaster")]
+        presses += 1
+        print(f"\n--- Button press {presses}, singals propagate... ---")
+        while len(queue) > 0:
+            source = queue[0][0]
+            pulse = queue[0][1]
+            match pulse:
+                case 0: lows += 1
+                case 1: highs += 1
+            active_module = queue[0][2]
+            history.append(queue.pop(0))
+            print(f"{source} -({pulse})-> {active_module}")
+            for mod in modules:
+                if mod.name == active_module:
+                    outputs = mod.trigger(pulse, source)
+                    if outputs:
+                        for output in outputs: queue.append(output)
+        cycle_counts[presses] = [lows, highs]
+        print_module_states(modules)
 
-    while len(queue) > 0:
-        source = queue[0][0]
-        pulse = queue[0][1]
-        active_module = queue[0][2]
-        history.append(queue.pop(0))
-        print(f"{source} -({pulse})-> {active_module}")
-        for mod in modules:
-            if mod.name == active_module:
-                outputs = mod.trigger(pulse, source)
-                if outputs:
-                    for output in outputs: queue.append(output)
+        if get_state(modules) == initial_state:
+            cycle_end = True
+            print(f"\n--- Module state returned to initial, cycle length found: {presses}")
 
+    print_history(history)
 
+    print("\n",cycle_counts)
+    print(f"\n--- Final count: Cycle length: {presses}, Lows: {lows}, Highs: {highs}")
 
-    answer = "Undefined"
+    cycles = 1000//presses
+    if  1000%cycles == 0:
+        answer = (cycles * lows) * (cycles*highs)
+    else:
+        print("Halp")
+        answer = "Undefined"
     print("\nThe solution is:",answer)
 
 main()
