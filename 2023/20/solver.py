@@ -52,9 +52,10 @@ class Broadcaster():
     def addTarget(self, output) -> None:
         self.outputs.append(output)
 
-    def trigger(self) -> None:
-        for output in self.outputs:
-            output.trigger()
+    def trigger(self, input: bool, source: str) -> None:
+        return zip([self.name]*len(self.outputs), [input]*len(self.outputs), self.outputs)
+        # for output in self.outputs:
+        #     output.trigger(input)
 
 class FlipFlop():
     def __init__(self, name: str, outputs=None) -> None:
@@ -65,17 +66,17 @@ class FlipFlop():
     def __str__(self) -> str:
         return f"{self.name} ({self.state}) -> {self.outputs}"
 
-    def trigger(self, input: bool):
+    def trigger(self, input: bool, source: str):
         match input:
             case 1:
-                return [], self.state
+                return None
             case 0:
                 if self.state == 0:
                     self.state = 1
-                    return self.outputs, self.state
+                    return zip([self.name]*len(self.outputs), [self.state]*len(self.outputs), self.outputs)
                 elif self.state == 1:
                     self.state = 0
-                    return self.outputs, self.state
+                    return zip([self.name]*len(self.outputs), [self.state]*len(self.outputs), self.outputs)
             case _:
                 return ValueError
 
@@ -97,11 +98,11 @@ class Conjunction():
     def trigger(self, input: bool, source: str) -> bool:
         self.memory[source] = input
         pulse = 0
-        for state in self.memory.values:
+        for state in self.memory.values():
             if state == 0:
                 pulse = 1
                 break
-        return pulse
+        return zip([self.name]*len(self.outputs), [pulse]*len(self.outputs), self.outputs)
 
 
 def preload(input: list):
@@ -109,27 +110,31 @@ def preload(input: list):
     # Find broadcaster
     for line in input:
         if line[0] == "b":
-            outputs = line.split("->")[1].strip().split(",")
+            outputs = "".join(line.split("->")[1].split(" ")).split(",")
             modules.append(Broadcaster("broadcaster", outputs))
 
     # Load empty conjunctions
     for line in input:
         if line[0] == "&":
-                name = line.split("->")[0].strip()[1:]
-                outputs = line.split("->")[1].strip().split(",")
+                name = line.split("->")[0].strip(" ")[1:]
+                outputs = "".join(line.split("->")[1].split(" ")).split(",")
                 modules.append(Conjunction(name, outputs))
-                print("Conjunction {} added".format(name))
+                # print("Conjunction {} added".format(name))
 
     # Load flipflops updating conjunction inputs
     for line in input:
         if line[0] == "%":
-            name = line.split("->")[0].strip()[1:]
-            outputs = line.split("->")[1].strip().split(",")
+            name = line.split("->")[0].strip(" ")[1:]
+            outputs = "".join(line.split("->")[1].split(" ")).split(",")
             for module in modules:
                 if module.name in outputs:
                     module.add_source(name)
             modules.append(FlipFlop(name, outputs))
-            print("Flipflop {} added".format(name))
+            # print("Flipflop {} added".format(name))
+
+    # Check all modules created successfully
+    if len(modules) == len(input): print("\nAll modules accounted for\n")
+    else: print("\nModule count error\n")
 
     return modules
 
@@ -138,9 +143,30 @@ def preload(input: list):
 # Main code
 def main():
     modules = preload(input)
-    print(modules)
-    for module in modules: print(module)
+    for module in modules: print(type(module).__name__, module)
+
+    queue = [("button", 0, "broadcaster")]
+    history = []
+    lows = 1
+    highs = 0
+
+    print("\nPress button once, singals propagate...\n")
+
+    while len(queue) > 0:
+        source = queue[0][0]
+        pulse = queue[0][1]
+        active_module = queue[0][2]
+        history.append(queue.pop(0))
+        print(f"{source} -({pulse})-> {active_module}")
+        for mod in modules:
+            if mod.name == active_module:
+                outputs = mod.trigger(pulse, source)
+                if outputs:
+                    for output in outputs: queue.append(output)
+
+
+
     answer = "Undefined"
-    print("The solution is:",answer)
+    print("\nThe solution is:",answer)
 
 main()
