@@ -168,25 +168,27 @@ def get_state(modules: list) -> list:
         state.append((module.name, module.state))
     return state
 
-def check_end(history: list) -> int:
-    rx_count = 0
+def check_end(history: list) -> list:
+    to_track = ["pl", "mz", "lz", "zm"]
+    tracker = [0,0,0,0]
     for line in history:
-        if line[2] == "rx" and line[1] == 0:
-            rx_count += 1
-    return rx_count
+        if line[2] in to_track and line[1] == 1:
+            tracker[to_track.index(line[2])] +1
+    return tracker
 
 # Main code
 def main():
     # Create modules from puzzle input
     modules = preload(input)
-    print_module_states(modules)
+    # print_module_states(modules)
 
     # Set initial state and tracker
     presses = 0
     cycle_end = False
     history = []
 
-    while not cycle_end:
+
+    while not cycle_end and presses < 100000:
         # Initialise signal queue
         queue = [("button", 0, "broadcaster")]
         presses += 1
@@ -204,13 +206,41 @@ def main():
         # print_module_states(modules)
 
         # print_history(history)
-        rx_count = check_end(history)
+        tracker = check_end(history)
+        if tracker != [0,0,0,0]:
+            print(f"On press {presses} tracker = {tracker}")
         #os.system('clear')
-        if presses%1000==0 or rx_count is not 0:
-            print(f"--- Button press {presses}, rx lows: {rx_count}")
-        cycle_end = rx_count == 1
+        # if presses%1000==0 or rx_count is not 0:
+        #     print(f"--- Button press {presses}, rx lows: {rx_count}")
+        cycle_end = tracker == [1,1,1,1]
         history = []
 
     print("\nThe solution is:",presses)
 
 main()
+
+'''
+conjunctions:
+bn, pl, vt, dq, qt, mz, lz, nl, zm (9)
+
+bn <- pl, mz, lz, zm (4)
+
+pl <- qt (1)
+mz <- dq (1)
+lz <- vt (1)
+zm <- nl (1)
+
+qt - ffs (conjunction)
+dq - ffs (conjunction)
+vt - ffs (conjunction)
+nl - ffs (conjunction)
+
+it looks like these key conjuctions have mutually exclusive inputs, si this true?
+Can i find the structure.
+How to do this in code?!
+
+rx low when bn inputs all high
+bn inputs are high when their one input's inputs are not all high
+
+flipflop chains act like counters - can the structure be simplified
+'''
