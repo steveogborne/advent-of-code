@@ -42,6 +42,8 @@ Create a dictionary with keys as the line code and values as
 '''
 
 # Globals
+import copy
+
 with open("puzzle_input.txt") as file:
     input = file.read().split("\n\n")
     workflow_list = input[0].splitlines()
@@ -63,8 +65,8 @@ def get_new_ranges(xmas_in: dict, conditional: str) -> dict:
     param = conditional[0]          # x, m, a or s
     ineq = conditional[1]           # < or >
     value = int(conditional[2:])    # node name eg. xx or abc
-    valid_range = xmas_in.copy()
-    invalid_range = xmas_in.copy()
+    valid_range = copy.deepcopy(xmas_in)
+    invalid_range = copy.deepcopy(xmas_in)
     match ineq:
         case "<":
             if value < xmas_in[param]["min"]:
@@ -108,7 +110,7 @@ def process_node(xmas_in: dict, clauses: list):
                     pass
                 case _:
                     children.append((target, valid_range))
-            working_range = invalid_range.copy()
+            working_range = invalid_range
         else:
             target = split_clause[0]
             match target:
@@ -123,15 +125,6 @@ def process_node(xmas_in: dict, clauses: list):
 def display_children(child):
     return f"{child[0]}: {child[1]['x']['min']}<x<{child[1]['x']['max']}, {child[1]['m']['min']}<m<{child[1]['m']['max']}, {child[1]['a']['min']}<a<{child[1]['a']['max']}, {child[1]['s']['min']}<s<{child[1]['s']['max']}"
 
-# Two steps: 1)
-
-# At node: if A: append combinations tracker with xmas
-# If R: apply reverse clause to next term
-# For each clause add clause_to_xmas(parent, clause) and clause_to_xmas(parent, opposite_clause(clause))
-
-# Example line px{a<2006:qkq,m>2090:A,rfg}
-# Turn into node: px: children = [qkq, rfg]
-
 # Main code
 def main():
     # Initialise tree queue with xmas_0
@@ -139,7 +132,7 @@ def main():
     # Tracker for accepted parts
     accepted_parts = 0
     nodes_processed = 0
-    count_max = 1
+    count_max = 1000
 
     # While there are nodes in the queue left to process, process them
     # adding their accepted ranges to the list and new children to the queue
@@ -157,17 +150,3 @@ def main():
     print(f"Processed {nodes_processed} nodes. The solution is: {accepted_parts}")
 
 main()
-
-
-# Create a tree which is a list of nodes.
-# Each node stores a list of child nodes.
-# We know it's not a cylic tree if the generate code terminates.
-
-# For each node we can calculate the minimum and maximum parameter that reaches the node
-# Need to stor 8 parameters and calculate them
-
-# For every A we should be abale to add up all the ranges that reached there.
-# Go through list of nodes:
-# No A leaves? Delete
-# A leaves? Add their range product to the total. Delete node
-# When all nodes accounted for done.
