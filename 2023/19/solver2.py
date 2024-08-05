@@ -15,100 +15,159 @@ How many distinct combinations of ratings will be accepted by the workflows?
 
 # Solution sketch
 '''
-Turn parts list into list of dictionaries
-Turn:
-{x=302,m=140,a=650,s=1288}
-into:
-{"x":302,"m":140,"a":650,"s":1288}
+Part 2:
+No longer need parts list.
+Solution is a tree of nodes. At each conditional, the tree splits.
+The branches are either a new function or A or R.
+Note: X,m,a,s values can have mulitple ranges (is this true? not sure, each clause cuts range in two mutually excl. ranges and tree has no loops)
+We want to find all combinations that reach an A terminus
 
-1) Strip {}, split by "," and then by "="
-2) Create dictionary with key value pairs as elements in sublists
+Setup:
+Process input file to make workflows parsable for this new solution
+Setup a queue to traverse the tree
+Write a function that:
+    Takes a node workflow and part range input
+    Establishes the output ranges that either
+        Get accepted or
+        Passed to a new workflow (node)
+Create a dataclass that stores the part ranges (min, max for x, m, a, s)
 
-def part_parser(part):
-    "{"+","join(["'"+param.split("=")[0]+"':"+param.split("=")[1] for param in part[1:-1].split(",")])+"}"
+Solve
+Start at the base of the tree ("in"):
+Process the node
+Add the accepted range to the accepted ranges (or calculate the range product as we go?)
+Add the children to the queue
 
-Turn works flows into list of functions, store as a python file and import
-
-Aim of work flow parser:
-turn px{a<2006:qkq,m>2090:A,rfg} into:
-
-def px(part):
-    if part[a]<2006: return qkq(part)
-    elif part[m]>2090: return "A"
-    else: return rfg(part)
-
-Observations:
-# lines are separated by ,
-# : followed by function call or "A" or "R"
-# final term is function call or "A" or "R"
-# function call is always 2 or more characters so can do conditionals based onstring length
-
-Elements of parsing:
-A add "def " at the start
-B "{" -> "(part): if "
-C "*}" -> "; else: return " + "A" | "R" | "xyz(part)" depending on *
-D "*<" -> "part[*]<"
-E "*>" -> "part[*]>"
-F all other "," -> "; elif "
-G following :* += "return "A"" | "return "B"" | "return *(part)" depending on *
-
-Steps in parsing:
-1) first remove trailing }, then split by "," then for each sub-split by ":" (last item not split)
-    px{a<2006:qkq,m>2090:A,rfg} goes to:
-    [["px{a<2006", "qkq"], --open clause
-    ["m>2090", "A"] -- middle clause(s)
-    ["rfg"] -- close clause -> want "; else: return *" where * is "A", "B", or rfg(part)
-2) for first item in 1): A, B, G
-3) for last item in 1): C
-4) If there are middle items: prepend with F, and D, E, G
-5) Join items with ""
+Create a dictionary with keys as the line code and values as
 '''
-# Variables
+
+# Globals
 with open("puzzle_input.txt") as file:
     input = file.read().split("\n\n")
     workflow_list = input[0].splitlines()
-    raw_parts = input[1].splitlines()
 
-part_dicts = [{param.split("=")[0]:int(param.split("=")[1]) for param in part[1:-1].split(",")} for part in raw_parts]
-# for part in part_dicts: print(part)
+# Turn the input into something more useful:
+node_clauses = {}
+for line in workflow_list:
+    name = line.split("{")[0]
+    clauses = line[:-1].split("{")[1].split(",")
+    node_clauses[name] = clauses
+
+xmas_0 = {"x": {"min": 1, "max": 4000},
+           "m": {"min": 1, "max": 4000},
+           "a": {"min": 1, "max": 4000},
+           "s": {"min": 1, "max": 4000}}
 
 # Functions
-def end_resolution(snippet):
-    if len(snippet) ==1: return "\n    else: return '"+snippet+"'"
-    else: return "\n    else: return "+snippet+"(part)"
+def get_new_ranges(xmas_in: dict, conditional: str) -> dict:
+    param = conditional[0]          # x, m, a or s
+    ineq = conditional[1]           # < or >
+    value = int(conditional[2:])    # node name eg. xx or abc
+    valid_range = xmas_in.copy()
+    invalid_range = xmas_in.copy()
+    match ineq:
+        case "<":
+            if value < xmas_in[param]["min"]:
+                valid_range[param]["min"] = 0
+                valid_range[param]["max"] = 0
+            else:
+                new_valid_max = min(value - 1, xmas_in[param]["max"])
+                valid_range[param]["max"] = new_valid_max
+                invalid_range[param]["min"] = new_valid_max + 1
+        case ">":
+            if value > xmas_in[param]["max"]:
+                valid_range[param]["min"] = 0
+                valid_range[param]["max"] = 0
+            else:
+                new_valid_min = max(value + 1, xmas_in[param]["min"])
+                valid_range[param]["min"] = new_valid_min
+                invalid_range[param]["max"] = new_valid_min - 1
+    return valid_range, invalid_range
 
-def resolution(snippet):
-    if len(snippet) ==1: return ": return '"+snippet+"'"
-    else: return ": return "+snippet+"(part)"
+def get_range_product(xmas: dict) -> int:
+    product = 1
+    for range in xmas.values():
+        product *= range["max"] - range["min"] + 1
+    return product
 
-def comparison(snippet):
-    return "part['"+snippet[0]+"']"+snippet[1:]
+def process_node(xmas_in: dict, clauses: list):
+    # A function to take an input part xmas range, a workflow list of clauses
+    # That updates the accepted ranges and adds child nodes with input part ranges to the queue
+    working_range = xmas_in
+    accepted = 0
+    children = []
+    for clause in clauses:
+        split_clause = clause.split(":")
+        if len(split_clause) == 2:
+            conditional, target = split_clause
+            valid_range, invalid_range = get_new_ranges(working_range, conditional)
+            match target:
+                case "A":
+                    accepted += get_range_product(valid_range)
+                case "R":
+                    pass
+                case _:
+                    children.append((target, valid_range))
+            working_range = invalid_range.copy()
+        else:
+            target = split_clause[0]
+            match target:
+                case "A":
+                    accepted += get_range_product(working_range)
+                case "R":
+                    pass
+                case _:
+                    children.append((target, working_range))
+    return accepted, children
 
-def line_to_workflow(line):
-    if line[0:2] == "in": line = "part_in"+line[2:]
-    line_clauses = [clause.split(":") for clause in line[0:-1].split(",")] # step 1
-    open_clause = "def "+line_clauses[0][0].split("{")[0]+"(part): \n    if "+comparison(line_clauses[0][0].split("{")[1])+resolution(line_clauses[0][1])
-    if len(line_clauses) >2:
-        middle_clauses = line_clauses[1:-1]
-        middle_clauses = ["\n    elif "+comparison(clause[0])+resolution(clause[1]) for clause in middle_clauses]
-        middle_clauses = "".join(middle_clauses)
-    else: middle_clauses = ""
-    close_clause = end_resolution(line_clauses[-1][0])
-    result = open_clause+middle_clauses+close_clause
-    return result
+def display_children(child):
+    return f"{child[0]}: {child[1]['x']['min']}<x<{child[1]['x']['max']}, {child[1]['m']['min']}<m<{child[1]['m']['max']}, {child[1]['a']['min']}<a<{child[1]['a']['max']}, {child[1]['s']['min']}<s<{child[1]['s']['max']}"
 
-with open("workflows.py","w") as file2:
-        for line in workflow_list: file2.write(line_to_workflow(line)+"\n")
-import workflows
+# Two steps: 1)
+
+# At node: if A: append combinations tracker with xmas
+# If R: apply reverse clause to next term
+# For each clause add clause_to_xmas(parent, clause) and clause_to_xmas(parent, opposite_clause(clause))
+
+# Example line px{a<2006:qkq,m>2090:A,rfg}
+# Turn into node: px: children = [qkq, rfg]
 
 # Main code
 def main():
-    score = 0
-    for part in part_dicts:
-        if workflows.part_in(part) == "A": score += sum(part.values())
-        else: continue
+    # Initialise tree queue with xmas_0
+    queue = [("in", xmas_0)]
+    # Tracker for accepted parts
+    accepted_parts = 0
+    nodes_processed = 0
+    count_max = 1
 
-    answer = score
-    print("The solution is:",answer)
+    # While there are nodes in the queue left to process, process them
+    # adding their accepted ranges to the list and new children to the queue
+    while len(queue) > 0 and nodes_processed < count_max:
+        nodes_processed += 1
+        node_name, node_input = queue.pop(0)
+        newly_accepted, new_children = process_node(node_input, node_clauses[node_name])
+        accepted_parts += newly_accepted
+        queue += new_children
+        print(f"\"{node_name}\" accepted {newly_accepted} new parts and created:")
+        for child in new_children:
+            print(display_children(child))
+
+
+    print(f"Processed {nodes_processed} nodes. The solution is: {accepted_parts}")
 
 main()
+
+
+# Create a tree which is a list of nodes.
+# Each node stores a list of child nodes.
+# We know it's not a cylic tree if the generate code terminates.
+
+# For each node we can calculate the minimum and maximum parameter that reaches the node
+# Need to stor 8 parameters and calculate them
+
+# For every A we should be abale to add up all the ranges that reached there.
+# Go through list of nodes:
+# No A leaves? Delete
+# A leaves? Add their range product to the total. Delete node
+# When all nodes accounted for done.
