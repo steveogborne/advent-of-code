@@ -86,49 +86,64 @@ def main():
     queue = []
     queue.append(input[0][0])
     next_queue = []
-    # rerun = True # If needed can use this to trigger a complete rescan of the map
+    rerun = True # If needed can use this to trigger a complete rescan of the map
+    run_count = 0
     # input[0][0][2] = ["v", ">", "^", "<"]
-    for cell in queue:
-        # Is movement restricted?
-        last_3 = ["a", "b", "c"]
-        cant_go = None
-        if cell.path and len(cell.path) > 2:
-            last_3 = cell.path[-3:]
-            if last_3[0] == last_3[1] and last_3[1] == last_3[2]:
-                cant_go = last_3[0]
+    while rerun:
+        rerun = False
+        run_count +=1
+        while len(queue)>0:
+            for cell in queue:
+                # Is movement restricted?
+                last_3 = ["a", "b", "c"]
+                cant_go = None
+                if cell.path and len(cell.path) > 2:
+                    last_3 = cell.path[-3:]
+                    if last_3[0] == last_3[1] and last_3[1] == last_3[2]:
+                        cant_go = last_3[0]
 
-        # if adjacent cell is valid considering edges and movement restrictions:
-        #   if new shortest distance < current distance:
-        #       Update distance; update path; add new cell to next queue
-        if cell.r > 0 and cant_go != "^":
-            up: Cell = input[cell.r - 1][cell.c]
-            if cell.dist + up.heat < up.dist:
-                up.dist = cell.dist + up.heat
-                up.path = cell.path + ['^']
-                next_queue.append(up)
-        if cell.r < height and cant_go != "v":
-            down: Cell = input[cell.r + 1][cell.c]
-            if cell.dist + down.heat < down.dist:
-                down.dist = cell.dist + down.heat
-                down.path = cell.path + ['v']
-                next_queue.append(down)
-        if cell.c > 0 and cant_go != "<":
-            left: Cell = input[cell.r][cell.c - 1]
-            if cell.dist + left.heat < left.dist:
-                left.dist = cell.dist + left.heat
-                left.path = cell.path + ['<']
-                next_queue.append(left)
-        if cell.c < width and cant_go != ">":
-            right: Cell = input[cell.r][cell.c + 1]
-            if cell.dist + right.heat < right.dist:
-                right.dist = cell.dist + right.heat
-                right.path = cell.path + ['>']
-                next_queue.append(right)
+                # if adjacent cell is valid considering edges and movement restrictions:
+                #   if new shortest distance < current distance:
+                #       Update distance; update path; add new cell to next queue
+                if cell.r > 0 and cant_go != "^":
+                    up: Cell = input[cell.r - 1][cell.c]
+                    if cell.dist + up.heat < up.dist:
+                        up.dist = cell.dist + up.heat
+                        up.path = cell.path + ['^']
+                        next_queue.append(up)
+                        rerun = True
+                if cell.r < height-1 and cant_go != "v":
+                    down: Cell = input[cell.r + 1][cell.c]
+                    if cell.dist + down.heat < down.dist:
+                        down.dist = cell.dist + down.heat
+                        down.path = cell.path + ['v']
+                        next_queue.append(down)
+                        rerun = True
+                if cell.c > 0 and cant_go != "<":
+                    left: Cell = input[cell.r][cell.c - 1]
+                    if cell.dist + left.heat < left.dist:
+                        left.dist = cell.dist + left.heat
+                        left.path = cell.path + ['<']
+                        next_queue.append(left)
+                        rerun = True
+                if cell.c < width-1 and cant_go != ">":
+                    right: Cell = input[cell.r][cell.c + 1]
+                    if cell.dist + right.heat < right.dist:
+                        right.dist = cell.dist + right.heat
+                        right.path = cell.path + ['>']
+                        next_queue.append(right)
+                        rerun = True
 
-        for item in next_queue: print(item)
+                # for item in next_queue: print(item)
+            queue.clear()
+            queue.extend(next_queue)
+            next_queue.clear()
+        print(f"run {run_count}, shortest path: {input[height-1][width-1].path}, distance: {input[height-1][width-1].dist}")
 
-        pass
-    answer = "Undefined"
-    print("The solution is:",answer)
+    for line in input:
+        for cell in line:
+            print(f"cell (row {cell.r}, col{cell.c}): dist {cell.dist}")
+    print(f"The solution is: {input[height-1][width-1].dist}")
+
 
 main()
