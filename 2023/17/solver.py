@@ -10,17 +10,34 @@ What is the minimum heat loss?
 
 # Solution sketch
 '''
-Damn is this a machine learning problem???
-If I were training somethign:
-I would want to reward reducing number of steps (direct route).
-But also avoid more heat loss tiles
-Algorithmically:
-Revise dijkstra's algorithm. But how to factor in the turning limit part?
+Ok, having seen a few videos on djiksras and a* search algorithms I have a better idea of how to solve a problem like this.
+But the 3 limit streight line limit sounds hard.
+I think I can solve the length limit constraint by storing the shortest path to each point as well as it's overall length.
+This way I can invalidate too long paths and disqualify them.
+
+Note! The heat loss from the first block is not included
 
 '''
 # Variables
-with open("puzzle_input.txt") as file:
-    input = file.read().splitlines()
+class Cell:
+    def __init__(self, r: int, c: int, heat: int, path: list = [], dist: int = 9999) -> None:
+        self.r = r
+        self.c = c
+        self.heat = heat
+        self.path = path
+        self.dist = dist
+
+    def __str__(self) -> str:
+        return f"({self.r}, {self.c}) heat: {self.heat}, shortest path: {self.path}, shortest distance: {self.dist}"
+
+with open("test_input.txt") as file:
+    input = [[Cell(r, c, int(char)) for c, char in enumerate(line)] for r, line in enumerate(file.read().splitlines())]
+
+input[0][0].dist = 0 # starting square has zero distance from start
+
+# for line in input:
+#     for col in line:
+#         print(col)
 
 example = '''
 2413432311323
@@ -52,12 +69,65 @@ example_min_path = '''
 25465488877v5
 43226746555v>
 '''
+
 # Functions
-
-
 
 # Main code
 def main():
+    # Create an array to store
+    #   Input cell values (heats), done
+    #   Shortest distance from start (default high, update as we go)
+    #   Shortest path to this point
+    #   Possibly a heuristic for distance to end (if using A* method for optimising)
+
+    # Start top left and evaluate next diagonal row of adjacent cells
+    height = len(input)
+    width = len(input[0])
+    queue = []
+    queue.append(input[0][0])
+    next_queue = []
+    # rerun = True # If needed can use this to trigger a complete rescan of the map
+    # input[0][0][2] = ["v", ">", "^", "<"]
+    for cell in queue:
+        # Is movement restricted?
+        last_3 = ["a", "b", "c"]
+        cant_go = None
+        if cell.path and len(cell.path) > 2:
+            last_3 = cell.path[-3:]
+            if last_3[0] == last_3[1] and last_3[1] == last_3[2]:
+                cant_go = last_3[0]
+
+        # if adjacent cell is valid considering edges and movement restrictions:
+        #   if new shortest distance < current distance:
+        #       Update distance; update path; add new cell to next queue
+        if cell.r > 0 and cant_go != "^":
+            up: Cell = input[cell.r - 1][cell.c]
+            if cell.dist + up.heat < up.dist:
+                up.dist = cell.dist + up.heat
+                up.path = cell.path + ['^']
+                next_queue.append(up)
+        if cell.r < height and cant_go != "v":
+            down: Cell = input[cell.r + 1][cell.c]
+            if cell.dist + down.heat < down.dist:
+                down.dist = cell.dist + down.heat
+                down.path = cell.path + ['v']
+                next_queue.append(down)
+        if cell.c > 0 and cant_go != "<":
+            left: Cell = input[cell.r][cell.c - 1]
+            if cell.dist + left.heat < left.dist:
+                left.dist = cell.dist + left.heat
+                left.path = cell.path + ['<']
+                next_queue.append(left)
+        if cell.c < width and cant_go != ">":
+            right: Cell = input[cell.r][cell.c + 1]
+            if cell.dist + right.heat < right.dist:
+                right.dist = cell.dist + right.heat
+                right.path = cell.path + ['>']
+                next_queue.append(right)
+
+        for item in next_queue: print(item)
+
+        pass
     answer = "Undefined"
     print("The solution is:",answer)
 
