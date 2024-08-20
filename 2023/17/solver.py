@@ -31,11 +31,13 @@ class Cell:
         return f"({self.r}, {self.c}) heat: {self.heat}, shortest path: {self.path}, shortest distance: {self.dist}"
 
 class Node:
-    def __init__(self, cell: Cell, parent: Cell, children: list = None, dist: int = 9999) -> None:
+    def __init__(self, cell: Cell, parent: Cell, children: list = None, dist: int = 9999, hist: list = [".",".","."]) -> None:
         self.cell = cell
         self.parent = parent
         self.children = children if children is not None else []
         self.dist = dist
+        self.hist = hist
+
 
 with open("test_input.txt") as file:
     input = [[Cell(r, c, int(char)) for c, char in enumerate(line)] for r, line in enumerate(file.read().splitlines())]
@@ -93,21 +95,26 @@ def main2():
     nextQueue = []
     currentQueue.append(pathNodes[0])
 
-    # Test boundaries to establish children (MVP: down, right)
+    # Test boundaries and movement constraints to establish children (MVP: down, right)
     # Calc running distance for node
     # Add children to queue
     height = len(input)
     width = len(input[0])
     while len(currentQueue) > 0:
         for node in currentQueue:
+            noGo = "."
+            if node.hist[0] == node.hist[1] and node.hist[1] == node.hist[2]:
+                noGo = node.hist[2]
             children = []
-            if node.cell.c < width-1:
+            if node.cell.c < width-1 and noGo != ">":
                 right: Node = Node(input[node.cell.r][node.cell.c + 1], node)
                 right.dist = node.dist + right.cell.heat
+                right.hist = node.hist[1:] + [">"]
                 children.append(right)
-            if node.cell.r < height-1:
+            if node.cell.r < height-1 and noGo != "v":
                 down: Node = Node(input[node.cell.r + 1][node.cell.c], node)
                 down.dist = node.dist + down.cell.heat
+                down.hist = node.hist[1:] + ["v"]
                 children.append(down)
             # if node.cell.c > 0:
             #   left: Node = Node(input[node.cell.r][node.cell.c - 1], node)
