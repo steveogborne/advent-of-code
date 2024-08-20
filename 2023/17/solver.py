@@ -20,15 +20,22 @@ Note! The heat loss from the first block is not included
 '''
 # Variables
 class Cell:
-    def __init__(self, r: int, c: int, heat: int, path: list = [], dist: int = 9999) -> None:
+    def __init__(self, r: int, c: int, heat: int, path: list = None, dist: int = 9999) -> None:
         self.r = r
         self.c = c
         self.heat = heat
-        self.path = path
+        self.path = path if path is not None else []
         self.dist = dist
 
     def __str__(self) -> str:
         return f"({self.r}, {self.c}) heat: {self.heat}, shortest path: {self.path}, shortest distance: {self.dist}"
+
+class Node:
+    def __init__(self, cell: Cell, parent: Cell, children: list = None, dist: int = 9999) -> None:
+        self.cell = cell
+        self.parent = parent
+        self.children = children if children is not None else []
+        self.dist = dist
 
 with open("test_input.txt") as file:
     input = [[Cell(r, c, int(char)) for c, char in enumerate(line)] for r, line in enumerate(file.read().splitlines())]
@@ -71,8 +78,66 @@ example_min_path = '''
 '''
 
 # Functions
+def displayPath(path):
+    pass
 
 # Main code
+def main2():
+    # Create start node from start cell
+    pathNodes = []
+    pathNodes.append(Node(input[0][0], None))
+    pathNodes[0].dist = 0
+
+    # Create queue from start node
+    currentQueue = []
+    nextQueue = []
+    currentQueue.append(pathNodes[0])
+
+    # Test boundaries to establish children (MVP: down, right)
+    # Calc running distance for node
+    # Add children to queue
+    height = len(input)
+    width = len(input[0])
+    while len(currentQueue) > 0:
+        for node in currentQueue:
+            children = []
+            if node.cell.c < width-1:
+                right: Node = Node(input[node.cell.r][node.cell.c + 1], node)
+                right.dist = node.dist + right.cell.heat
+                children.append(right)
+            if node.cell.r < height-1:
+                down: Node = Node(input[node.cell.r + 1][node.cell.c], node)
+                down.dist = node.dist + down.cell.heat
+                children.append(down)
+            # if node.cell.c > 0:
+            #   left: Node = Node(input[node.cell.r][node.cell.c - 1], node)
+            #   left.dist = node.dist + left.cell.heat
+            #   children.append(left)
+            # if node.cell.r > 0
+            #   up: Node = Node(input[node.cell.r - 1][node.cell.c], node)
+            #   up.dist = node.dist + up.cell.heat
+            #   children.append(up)
+            for child in children:
+                nextQueue.append(child)
+                pathNodes.append(child)
+            children.clear()
+        currentQueue.clear()
+        currentQueue.extend(nextQueue)
+        nextQueue.clear()
+
+    # Find shortest path
+    bestEnd = None
+    endNodeCount = 0
+    for node in pathNodes:
+        if node.cell == input[-1][-1]:
+            endNodeCount += 1
+            # print(f"End node found with distance {node.dist}")
+            if bestEnd == None or node.dist < bestEnd.dist:
+                bestEnd = node
+
+    print(f"Shortest of {endNodeCount} paths has distance: {bestEnd.dist}")
+
+
 def main():
     # Create an array to store
     #   Input cell values (heats), done
@@ -101,6 +166,7 @@ def main():
                     last_3 = cell.path[-3:]
                     if last_3[0] == last_3[1] and last_3[1] == last_3[2]:
                         cant_go = last_3[0]
+                        # print(f"Can't go {cant_go} from {cell.r}, {cell.c}")
 
                 # if adjacent cell is valid considering edges and movement restrictions:
                 #   if new shortest distance < current distance:
@@ -140,10 +206,14 @@ def main():
             next_queue.clear()
         print(f"run {run_count}, shortest path: {input[height-1][width-1].path}, distance: {input[height-1][width-1].dist}")
 
+    # for line in input:
+    #     for cell in line:
+    #         print(f"cell (row {cell.r}, col{cell.c}): dist {cell.dist}")
+
     for line in input:
-        for cell in line:
-            print(f"cell (row {cell.r}, col{cell.c}): dist {cell.dist}")
+        print(([str(cell.dist) for cell in line]))
+
     print(f"The solution is: {input[height-1][width-1].dist}")
 
 
-main()
+main2()
