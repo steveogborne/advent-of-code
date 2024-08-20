@@ -18,35 +18,6 @@ This way I can invalidate too long paths and disqualify them.
 Note! The heat loss from the first block is not included
 
 '''
-# Variables
-class Cell:
-    def __init__(self, r: int, c: int, heat: int, path: list = None, dist: int = 9999) -> None:
-        self.r = r
-        self.c = c
-        self.heat = heat
-        self.path = path if path is not None else []
-        self.dist = dist
-
-    def __str__(self) -> str:
-        return f"({self.r}, {self.c}) heat: {self.heat}, shortest path: {self.path}, shortest distance: {self.dist}"
-
-class Node:
-    def __init__(self, cell: Cell, parent: Cell, children: list = None, dist: int = 9999, hist: list = [".",".","."]) -> None:
-        self.cell = cell
-        self.parent = parent
-        self.children = children if children is not None else []
-        self.dist = dist
-        self.hist = hist
-
-
-with open("test_input.txt") as file:
-    input = [[Cell(r, c, int(char)) for c, char in enumerate(line)] for r, line in enumerate(file.read().splitlines())]
-
-input[0][0].dist = 0 # starting square has zero distance from start
-
-# for line in input:
-#     for col in line:
-#         print(col)
 
 example = '''
 2413432311323
@@ -79,18 +50,96 @@ example_min_path = '''
 43226746555v>
 '''
 
+# Variables
+class Cell:
+    def __init__(self, r: int, c: int, heat: int, path: list = None, endDist: int = 9999) -> None:
+        self.r = r
+        self.c = c
+        self.heat = heat
+        self.endDist = endDist
+
+    def __str__(self) -> str:
+        return f"({self.r}, {self.c}) heat: {self.heat}, shortest path: {self.path}, shortest distance: {self.dist}"
+
+class Node:
+    def __init__(self, cell: Cell, parent: Cell, children: list = None, dist: int = 9999, hist: list = [".",".","."]) -> None:
+        self.cell = cell
+        self.parent = parent
+        self.children = children if children is not None else []
+        self.dist = dist
+        self.hist = hist
+
 # Functions
+def findBaseline(grid, startR, startC) -> int:
+    height = len(grid)
+    width = len(grid[0])
+    if startC < width:
+        r = startR
+        rcount = 0
+        c = startC + 1
+        ccount = 1
+    else:
+        r = startR + 1
+        rcount = 1
+        c = startC
+        ccount = 0
+    baseline = 0
+    while r < height and c < width:
+        baseline += grid[r][c].heat
+        if r == c :
+            c += 1
+            ccount += 1
+            rcount = 0
+        elif r > c:
+            if ccount < 3:
+                c += 1
+                ccount +=1
+                rcount = 0
+            elif r < height:
+                r += 1
+                ccount = 0
+                rcount +=1
+            else: # r = height
+                r -= 1
+                ccount = rcount = 0
+        else: # r < c
+            if rcount < 3:
+                r += 1
+                rcount += 1
+                ccount = 0
+            elif c < width:
+                c += 1
+                ccount += 1
+                rcount = 0
+            else: # c = width
+                c -= 1
+                ccount = rcount = 0
+    return baseline
+
+def initialise() -> list:
+    # Parse input and create array of cell objects
+    with open("test_input.txt") as file:
+        input = [[Cell(r, c, int(char)) for c, char in enumerate(line)] for r, line in enumerate(file.read().splitlines())]
+
+    # For all cells: Find and update baseline distance from cell to end
+    for row in input:
+        for cell in row:
+            cell.endDist = findBaseline(input, cell.r, cell.c)
+
 def displayPath(path):
     pass
 
 # Main code
 def main2():
+    # Create city grid (array of cell objects) from puzzle input
+    input = initialise()
+
     # Create start node from start cell
     pathNodes = []
     pathNodes.append(Node(input[0][0], None))
     pathNodes[0].dist = 0
 
-    # Create queue from start node
+    # Create queues and add start node
     currentQueue = []
     nextQueue = []
     currentQueue.append(pathNodes[0])
@@ -222,5 +271,6 @@ def main():
 
     print(f"The solution is: {input[height-1][width-1].dist}")
 
-
-main2()
+def main3():
+    input = initialise()
+main3()
