@@ -80,8 +80,9 @@ class Thing:
         return f"r: {self.r}, c: {self.c}, d: {self.d}, p: {self.p}, p2: {self.p2}, m: {self.m}"
 
     def priority(self) -> int:
+        # end = grid[self.r][self.c].endDist
         end = width - 1 - self.c + height - 1 - self.r
-        return self.d + 4* end
+        return self.d + 5*end # test finds optimum at 4*end
 
     '''
     Constraints:
@@ -93,60 +94,48 @@ class Thing:
     def getNeighbours(self) -> list:
         opposite = {"":"","v":"^", "^":"v", "<":">", ">":"<"}
         neighbours = []
-        nogo = [opposite[self.p]]
-        if self.m == 1: nogo.append(opposite[self.p2])
-        if self.m > 2: nogo.append(self.p)
-        # up if not top row, previous not down and previous up and momentum not 3
+        th = 7 # Test finds optimum at th = 11, puzzle 1174 at 8
+        nogo = [opposite[self.p]] # don't reverse
+        if self.p == "<": nogo.append("^") # don't loop back
+        if self.p == "^": nogo.append("<") # don't loop back
+        if self.m == 1: nogo.append(opposite[self.p2]) # don't double back
+        if self.m > 2: nogo.append(self.p) # momentum constraint
         if self.r > 0 and "^" not in nogo:
-            up: Thing = Thing(self.r-1, self.c, self.d + int(grid[self.r-1][self.c]), "^", self.p, self.m + 1 if self.p == "^" else 1)
-            neighbours.append(PrioritizedItem(up.priority(), up))
+            upBestDist = grid[self.r-1][self.c].bestDist
+            upDist = self.d + grid[self.r-1][self.c].heat
+            if upDist < upBestDist: upBestDist = grid[self.r-1][self.c].bestDist = upDist
+            if upDist < upBestDist + th:
+                up: Thing = Thing(self.r-1, self.c, upDist, "^", self.p, self.m + 1 if self.p == "^" else 1)
+                neighbours.append(PrioritizedItem(up.priority(), up))
         if self.r < height-1 and "v" not in nogo:
-            down: Thing = Thing(self.r+1, self.c, self.d + int(grid[self.r+1][self.c]), "v", self.p, self.m + 1 if self.p == "v" else 1)
-            neighbours.append(PrioritizedItem(down.priority(), down))
+            downBestDist = grid[self.r-1][self.c].bestDist
+            downDist = self.d + grid[self.r+1][self.c].heat
+            if downDist < downBestDist: downBestDist = grid[self.r+1][self.c].bestDist = downDist
+            if downDist < downBestDist + th:
+                down: Thing = Thing(self.r+1, self.c, downDist, "v", self.p, self.m + 1 if self.p == "v" else 1)
+                neighbours.append(PrioritizedItem(down.priority(), down))
         if self.c > 0 and "<" not in nogo:
-            left: Thing = Thing(self.r, self.c-1, self.d + int(grid[self.r][self.c-1]), "<", self.p, self.m + 1 if self.p == "<" else 1)
-            neighbours.append(PrioritizedItem(left.priority(), left))
+            leftBestDist = grid[self.r-1][self.c].bestDist
+            leftDist = self.d + grid[self.r][self.c-1].heat
+            if leftDist < leftBestDist: leftBestDist = grid[self.r][self.c-1].bestDist = leftDist
+            if leftDist < leftBestDist + th:
+                left: Thing = Thing(self.r, self.c-1, leftDist, "<", self.p, self.m + 1 if self.p == "<" else 1)
+                neighbours.append(PrioritizedItem(left.priority(), left))
         if self.c < width-1 and ">" not in nogo:
-            right: Thing = Thing(self.r, self.c+1, self.d + int(grid[self.r][self.c+1]), ">", self.p, self.m + 1 if self.p == ">" else 1)
-            neighbours.append(PrioritizedItem(right.priority(), right))
+            rightBestDist = grid[self.r-1][self.c].bestDist
+            rightDist = self.d + grid[self.r][self.c+1].heat
+            if rightDist < rightBestDist: rightBestDist = grid[self.r][self.c+1].bestDist = rightDist
+            if rightDist < rightBestDist + th:
+                right: Thing = Thing(self.r, self.c+1, rightDist, ">", self.p, self.m + 1 if self.p == ">" else 1)
+                neighbours.append(PrioritizedItem(right.priority(), right))
         return neighbours
 
-with open("puzzle_input.txt") as file:
-    grid = file.read().splitlines()
-
-height = len(grid)
-width = len(grid[0])
-
-frontier = PriorityQueue()
-origin: Thing = Thing(0,0,0)
-frontier.put(PrioritizedItem(origin.priority(), origin))
-searching = True
-# count = 0
-while searching: # and count < 100000:
-    cell: Thing = frontier.get().item
-    if cell.r == height -1 and cell.c == width-1:
-        print(f"Destination reached with total heat: {cell.d}")
-        print(cell)
-        searching = False
-    else:
-        # count +=1
-        neighbours: list[Thing] = cell.getNeighbours()
-        for neighbour in neighbours:
-            frontier.put(neighbour)
-
-count10 = 0
-print("Top 10:")
-while not frontier.empty() and count10 < 10:
-    count10 +=1
-    cell = frontier.get()
-    print(cell.priority, cell.item, "e:", (cell.item.priority()-cell.item.d)//2)
-
-
 class Cell:
-    def __init__(self, r: int, c: int, heat: int, path: list = None, endDist: int = 9999) -> None:
+    def __init__(self, r: int, c: int, heat: int, bestDist: int = 9999, endDist: int = 9999) -> None:
         self.r = r
         self.c = c
         self.heat = heat
+        self.bestDist = bestDist
         self.endDist = endDist
 
     def __str__(self) -> str:
@@ -211,7 +200,7 @@ def findBaseline(grid, startR, startC) -> int:
 
 def initialise() -> list:
     # Parse input and create array of cell objects
-    with open("test_input.txt") as file:
+    with open("puzzle_input.txt") as file:
         input = [[Cell(r, c, int(char)) for c, char in enumerate(line)] for r, line in enumerate(file.read().splitlines())]
 
     # For all cells: Find and update baseline distance from cell to end
@@ -221,25 +210,46 @@ def initialise() -> list:
 
     return input
 
-def displayPath(path):
-    pass
-
 # Main code
+grid = initialise()
 
-'''
-CHANGES NEEDED
-Priority queue - dict{priority, node?} or use priorityqueue class? Priority needs to be unique for key
-Keep track of priority to find next viable cell quickly
-Once cell evaluated, delete it - but how? - pop()
-Change history to momentum, last move?
-Change options logic to limit next moves (cant go back on self, no double turn in same direction)
-Node is always added to queue but with priority dist + heuristic
-Heuristic is cell distance to end
-Next node evaluated is lowest score priority
-Once end reached terminate
+# with open("test_input.txt") as file:
+#     grid = file.read().splitlines()
 
-Dont need to add children to node - add straight to queue
-'''
+height = len(grid)
+width = len(grid[0])
+
+def main3():
+
+    frontier = PriorityQueue()
+    origin: Thing = Thing(0,0,0)
+    frontier.put(PrioritizedItem(origin.priority(), origin))
+    searching = True
+    # count = 0
+    while searching: # and count < 100000:
+        cell: Thing = frontier.get().item
+        if cell.r == height -1 and cell.c == width-1:
+            print(f"Destination reached with total heat: {cell.d}")
+            print(cell)
+            searching = False
+        else:
+            # count +=1
+            neighbours: list[Thing] = cell.getNeighbours()
+            for neighbour in neighbours:
+                frontier.put(neighbour)
+
+        if frontier.empty():
+            print("Ran out of nodes")
+            searching = False
+
+    count10 = 0
+    print("Top 10:")
+    while not frontier.empty():
+        count10 +=1
+        cell = frontier.get()
+        if count10 < 10:
+            print(cell.priority, cell.item, "e:", (cell.item.priority()-cell.item.d)//2)
+    print(f"of {count10} frontiers")
 
 def main2():
     # Create city grid (array of cell objects) from puzzle input
@@ -318,7 +328,6 @@ def main2():
 
     print(f"Shortest of {endNodeCount} paths has distance: {bestEnd.dist}")
 
-
 def main():
     # Create an array to store
     #   Input cell values (heats), done
@@ -396,4 +405,4 @@ def main():
 
     print(f"The solution is: {input[height-1][width-1].dist}")
 
-# main2()
+main3()
