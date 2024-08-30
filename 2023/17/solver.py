@@ -1,3 +1,7 @@
+from queue import PriorityQueue
+from dataclasses import dataclass, field
+from typing import Any
+
 # Problem scope
 '''
 Get your "lava crucible" from the lava pool to the factory losing the least amount of heat
@@ -50,7 +54,94 @@ example_min_path = '''
 43226746555v>
 '''
 
+
+# input = array (list of lists or list of strings? only reading so perhaps list of strings)
+# frontier = priorityqueue of cells to be evaluated
+# cell has p: priority r: row, c: col, l: lastmove, m: momentum
+# or (priority, data): data.r, .c, .last, .m
+# Last move and momentum help determine next valid cells to inspect
+
 # Variables
+@dataclass(order=True)
+class PrioritizedItem:
+    priority: int
+    item: Any=field(compare=False)
+
+class Thing:
+    def __init__(self, r: int, c: int, d: int, p: str = "", p2: str = "", m: int = 1) -> None:
+        self.r = r
+        self.c = c
+        self.d = d
+        self.p = p
+        self.p2 = p2
+        self.m = m
+
+    def __str__(self) -> str:
+        return f"r: {self.r}, c: {self.c}, d: {self.d}, p: {self.p}, p2: {self.p2}, m: {self.m}"
+
+    def priority(self) -> int:
+        end = width - 1 - self.c + height - 1 - self.r
+        return self.d + 4* end
+
+    '''
+    Constraints:
+    Cant return to previous cell
+    Cant keep going if m > 2
+    No point turning back on self after only one turn
+    '''
+
+    def getNeighbours(self) -> list:
+        opposite = {"":"","v":"^", "^":"v", "<":">", ">":"<"}
+        neighbours = []
+        nogo = [opposite[self.p]]
+        if self.m == 1: nogo.append(opposite[self.p2])
+        if self.m > 2: nogo.append(self.p)
+        # up if not top row, previous not down and previous up and momentum not 3
+        if self.r > 0 and "^" not in nogo:
+            up: Thing = Thing(self.r-1, self.c, self.d + int(grid[self.r-1][self.c]), "^", self.p, self.m + 1 if self.p == "^" else 1)
+            neighbours.append(PrioritizedItem(up.priority(), up))
+        if self.r < height-1 and "v" not in nogo:
+            down: Thing = Thing(self.r+1, self.c, self.d + int(grid[self.r+1][self.c]), "v", self.p, self.m + 1 if self.p == "v" else 1)
+            neighbours.append(PrioritizedItem(down.priority(), down))
+        if self.c > 0 and "<" not in nogo:
+            left: Thing = Thing(self.r, self.c-1, self.d + int(grid[self.r][self.c-1]), "<", self.p, self.m + 1 if self.p == "<" else 1)
+            neighbours.append(PrioritizedItem(left.priority(), left))
+        if self.c < width-1 and ">" not in nogo:
+            right: Thing = Thing(self.r, self.c+1, self.d + int(grid[self.r][self.c+1]), ">", self.p, self.m + 1 if self.p == ">" else 1)
+            neighbours.append(PrioritizedItem(right.priority(), right))
+        return neighbours
+
+with open("puzzle_input.txt") as file:
+    grid = file.read().splitlines()
+
+height = len(grid)
+width = len(grid[0])
+
+frontier = PriorityQueue()
+origin: Thing = Thing(0,0,0)
+frontier.put(PrioritizedItem(origin.priority(), origin))
+searching = True
+# count = 0
+while searching: # and count < 100000:
+    cell: Thing = frontier.get().item
+    if cell.r == height -1 and cell.c == width-1:
+        print(f"Destination reached with total heat: {cell.d}")
+        print(cell)
+        searching = False
+    else:
+        # count +=1
+        neighbours: list[Thing] = cell.getNeighbours()
+        for neighbour in neighbours:
+            frontier.put(neighbour)
+
+count10 = 0
+print("Top 10:")
+while not frontier.empty() and count10 < 10:
+    count10 +=1
+    cell = frontier.get()
+    print(cell.priority, cell.item, "e:", (cell.item.priority()-cell.item.d)//2)
+
+
 class Cell:
     def __init__(self, r: int, c: int, heat: int, path: list = None, endDist: int = 9999) -> None:
         self.r = r
@@ -68,6 +159,8 @@ class Node:
         self.children = children if children is not None else []
         self.dist = dist
         self.hist = hist
+        self.last = "."
+        self.momentum = 0
 
 # Functions
 def findBaseline(grid, startR, startC) -> int:
@@ -126,13 +219,33 @@ def initialise() -> list:
         for cell in row:
             cell.endDist = findBaseline(input, cell.r, cell.c)
 
+    return input
+
 def displayPath(path):
     pass
 
 # Main code
+
+'''
+CHANGES NEEDED
+Priority queue - dict{priority, node?} or use priorityqueue class? Priority needs to be unique for key
+Keep track of priority to find next viable cell quickly
+Once cell evaluated, delete it - but how? - pop()
+Change history to momentum, last move?
+Change options logic to limit next moves (cant go back on self, no double turn in same direction)
+Node is always added to queue but with priority dist + heuristic
+Heuristic is cell distance to end
+Next node evaluated is lowest score priority
+Once end reached terminate
+
+Dont need to add children to node - add straight to queue
+'''
+
 def main2():
     # Create city grid (array of cell objects) from puzzle input
     input = initialise()
+    height = len(input)
+    width = len(input[0])
 
     # Create start node from start cell
     pathNodes = []
@@ -147,8 +260,8 @@ def main2():
     # Test boundaries and movement constraints to establish children (MVP: down, right)
     # Calc running distance for node
     # Add children to queue
-    height = len(input)
-    width = len(input[0])
+    heuristic = input[0][0].endDist
+    print("Evaluating paths")
     while len(currentQueue) > 0:
         for node in currentQueue:
             noGo = "."
@@ -156,23 +269,34 @@ def main2():
                 noGo = node.hist[2]
             children = []
             if node.cell.c < width-1 and noGo != ">":
-                right: Node = Node(input[node.cell.r][node.cell.c + 1], node)
-                right.dist = node.dist + right.cell.heat
-                right.hist = node.hist[1:] + [">"]
-                children.append(right)
+                rightHeuristic = input[node.cell.r][node.cell.c + 1].endDist + node.dist <= heuristic
+                if rightHeuristic:
+                    right: Node = Node(input[node.cell.r][node.cell.c + 1], node)
+                    right.dist = node.dist + right.cell.heat
+                    right.hist = node.hist[1:] + [">"]
+                    children.append(right)
             if node.cell.r < height-1 and noGo != "v":
-                down: Node = Node(input[node.cell.r + 1][node.cell.c], node)
-                down.dist = node.dist + down.cell.heat
-                down.hist = node.hist[1:] + ["v"]
-                children.append(down)
-            # if node.cell.c > 0:
-            #   left: Node = Node(input[node.cell.r][node.cell.c - 1], node)
-            #   left.dist = node.dist + left.cell.heat
-            #   children.append(left)
-            # if node.cell.r > 0
-            #   up: Node = Node(input[node.cell.r - 1][node.cell.c], node)
-            #   up.dist = node.dist + up.cell.heat
-            #   children.append(up)
+                downHeuristic = input[node.cell.r + 1][node.cell.c].endDist + node.dist <= heuristic
+                if downHeuristic:
+                    down: Node = Node(input[node.cell.r + 1][node.cell.c], node)
+                    down.dist = node.dist + down.cell.heat
+                    down.hist = node.hist[1:] + ["v"]
+                    children.append(down)
+            if node.cell.c > 0 and noGo != "<":
+                rightHeuristic = input[node.cell.r][node.cell.c - 1].endDist + node.dist <= heuristic
+                if rightHeuristic:
+                    left: Node = Node(input[node.cell.r][node.cell.c - 1], node)
+                    left.dist = node.dist + left.cell.heat
+                    left.hist = node.hist[1:] + ["<"]
+                    children.append(left)
+            if node.cell.r > 0 and noGo != "^":
+                upHeuristic = input[node.cell.r - 1][node.cell.c].endDist + node.dist <= heuristic
+                if upHeuristic:
+                    up: Node = Node(input[node.cell.r - 1][node.cell.c], node)
+                    up.dist = node.dist + up.cell.heat
+                    up.hist = node.hist[1:] + ["^"]
+                    children.append(up)
+
             for child in children:
                 nextQueue.append(child)
                 pathNodes.append(child)
@@ -182,6 +306,7 @@ def main2():
         nextQueue.clear()
 
     # Find shortest path
+    print("Finding shortest path")
     bestEnd = None
     endNodeCount = 0
     for node in pathNodes:
@@ -271,6 +396,4 @@ def main():
 
     print(f"The solution is: {input[height-1][width-1].dist}")
 
-def main3():
-    input = initialise()
-main3()
+# main2()
