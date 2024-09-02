@@ -5,7 +5,7 @@ from typing import Any
 # Problem scope
 '''
 Lava crucible update to supercricible
-Super crucible can go minimum of 4 in straight line
+Super crucible can go minimum of 4 in straight line before turning OR ENDING
 Super crucible can go max of 10 in straight line
 '''
 
@@ -37,21 +37,21 @@ def getNeighbours(vertex):
     neighbours = []
     match movement:
         case "^":
-            if r > 0 and m < 3: neighbours.append(((r-1,c), "^", m+1)) # up
-            if c > 0: neighbours.append(((r,c-1), "<", 1)) #left
-            if c < width -1: neighbours.append(((r,c+1), ">", 1)) #right
+            if r > 0 and m < 10: neighbours.append(((r-1,c), "^", m+1)) # up
+            if c > 0 and m > 3: neighbours.append(((r,c-1), "<", 1)) #left
+            if c < width -1 and m > 3: neighbours.append(((r,c+1), ">", 1)) #right
         case ">":
-            if r > 0: neighbours.append(((r-1,c), "^", 1)) # up
-            if c < width -1 and m < 3: neighbours.append(((r,c+1), ">", m+1)) # right
-            if r < height -1: neighbours.append(((r+1,c), "v", 1))# down
+            if r > 0  and m > 4: neighbours.append(((r-1,c), "^", 1)) # up
+            if c < width -1 and m < 10: neighbours.append(((r,c+1), ">", m+1)) # right
+            if r < height -1 and m > 3: neighbours.append(((r+1,c), "v", 1))# down
         case "v":
-            if c < width -1: neighbours.append(((r,c+1), ">", 1)) # right
-            if r < height -1 and m < 3: neighbours.append(((r+1,c), "v", m+1)) # down
-            if c > 0: neighbours.append(((r,c-1), "<", 1)) # left
+            if c < width -1 and m > 3: neighbours.append(((r,c+1), ">", 1)) # right
+            if r < height -1 and m < 10: neighbours.append(((r+1,c), "v", m+1)) # down
+            if c > 0 and m > 3: neighbours.append(((r,c-1), "<", 1)) # left
         case "<":
-            if r < height -1: neighbours.append(((r+1,c), "v", 1)) # down
-            if c > 0 and m < 3: neighbours.append(((r,c-1), "<", m+1)) # left
-            if r > 0: neighbours.append(((r-1,c), "^", 1)) # up
+            if r < height -1 and m > 3: neighbours.append(((r+1,c), "v", 1)) # down
+            if c > 0 and m < 10: neighbours.append(((r,c-1), "<", m+1)) # left
+            if r > 0 and m > 3: neighbours.append(((r-1,c), "^", 1)) # up
         case "":
             neighbours.append(((r,c+1), ">", 1)) # right
             neighbours.append(((r+1,c), "v", 1)) # down
@@ -69,14 +69,18 @@ def main():
     frontier.put(PrioritizedItem(0, origin))
     searching = True
 
-    while searching:
+    best = 9999
+
+    while not frontier.empty():
         nextPI = frontier.get()
         next = nextPI.item
         distance_so_far = visited[next]
-        if next[0] == (width-1, height-1):
-            print(f"Destination reached with total heat: {visited[next]}")
+        if next[0] == (width-1, height-1) and next[2]>3:
+            score = visited[next]
+            if score < best: best = score
+            print(f"Destination reached with total heat: {score}")
             print(next)
-            searching = False
+            # searching = False
         else:
             neighbours = getNeighbours(next)
             for neighbour in neighbours:
@@ -108,5 +112,7 @@ def main():
         if topCount < top:
             print(vertex.priority, vertex.item, visited[vertex.item])
     print(f"of {topCount} remaining frontiers")
+
+    print(f"Best = {best}")
 
 main()
