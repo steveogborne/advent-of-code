@@ -62,18 +62,21 @@ example_min_path = '''
 # Last move and momentum help determine next valid cells to inspect
 
 # Variables
+th = 2         # Test finds optimum at th = 11, puzzle 1174 at 8
+
 @dataclass(order=True)
 class PrioritizedItem:
     priority: int
     item: Any=field(compare=False)
 
 class Thing:
-    def __init__(self, r: int, c: int, d: int, p: str = "", p2: str = "", m: int = 1) -> None:
+    def __init__(self, r: int, c: int, d: int, p: str = "", p2: str = "", p3: str = "", m: int = 1) -> None:
         self.r = r
         self.c = c
         self.d = d
         self.p = p
         self.p2 = p2
+        self.p3 = p3
         self.m = m
 
     def __str__(self) -> str:
@@ -82,7 +85,7 @@ class Thing:
     def priority(self) -> int:
         # end = grid[self.r][self.c].endDist
         end = width - 1 - self.c + height - 1 - self.r
-        return self.d + 5*end # test finds optimum at 4*end
+        return self.d + end # test finds optimum at 4*end
 
     '''
     Constraints:
@@ -91,10 +94,124 @@ class Thing:
     No point turning back on self after only one turn
     '''
 
+    '''
+    Improvements
+    Match case on previous direction
+    Only go up or left once, never double back
+
+    '''
+
+
+    def lookRight(self):
+        rightBestDist = grid[self.r][self.c+1].bestDist
+        rightDist = self.d + grid[self.r][self.c+1].heat
+        if rightDist < rightBestDist: rightBestDist = grid[self.r][self.c+1].bestDist = rightDist
+        if rightDist < rightBestDist + th:
+            right: Thing = Thing(self.r, self.c+1, rightDist, ">", self.p, self.p2, self.m + 1 if self.p == ">" else 1)
+            return [PrioritizedItem(right.priority(), right)]
+        else:
+            return []
+
+    def lookDown(self):
+        downBestDist = grid[self.r+1][self.c].bestDist
+        downDist = self.d + grid[self.r+1][self.c].heat
+        if downDist < downBestDist: downBestDist = grid[self.r+1][self.c].bestDist = downDist
+        if downDist < downBestDist + th:
+            down: Thing = Thing(self.r+1, self.c, downDist, "v", self.p, self.p2, self.m + 1 if self.p == "v" else 1)
+            return [PrioritizedItem(down.priority(), down)]
+        else:
+            return []
+
+    def lookLeft(self):
+        leftBestDist = grid[self.r][self.c-1].bestDist
+        leftDist = self.d + grid[self.r][self.c-1].heat
+        if leftDist < leftBestDist: leftBestDist = grid[self.r][self.c-1].bestDist = leftDist
+        if leftDist < leftBestDist + th:
+            left: Thing = Thing(self.r, self.c-1, leftDist, "<", self.p, self.p2, self.m + 1 if self.p == "<" else 1)
+            return [PrioritizedItem(left.priority(), left)]
+        else:
+            return []
+
+    def lookUp(self):
+        upBestDist = grid[self.r-1][self.c].bestDist
+        upDist = self.d + grid[self.r-1][self.c].heat
+        if upDist < upBestDist: upBestDist = grid[self.r-1][self.c].bestDist = upDist
+        if upDist < upBestDist + th:
+            up: Thing = Thing(self.r-1, self.c, upDist, "^", self.p, self.p2, self.m + 1 if self.p == "^" else 1)
+            return [PrioritizedItem(up.priority(), up)]
+        else:
+            return []
+
     def getNeighbours(self) -> list:
-        opposite = {"":"","v":"^", "^":"v", "<":">", ">":"<"}
+        # urdl = 0b1000, 0b0100, 0b0010, 0b0001
+        # u, r, d, l = 0b00, 0b01, 0b11, 0b10
+        # opposite = u ^ 0b11
+        # go = 0b1111
+        # if self.p == 0b0001: go &= 0b1110 # if left don't loop back up
+        # if self.p == 0b1000: go &= 0b0111 # if up don't loop back left
+        # if self.m == 1: nogo.append(opposite[self.p2]) # don't double back
+        # if self.m > 2: nogo.append(self.p) # momentum constraint
+        # up go if go ^ 0b1000
+
         neighbours = []
-        th = 7 # Test finds optimum at th = 11, puzzle 1174 at 8
+
+        match self.p:
+            case ">":
+                match self.p2:
+                    case ">":
+                        if self.p3 != ">" and self.c < width - 1: neighbours += self.lookRight() # > > >
+                        if self.r > 0: neighbours += self.lookUp() # > > ^
+                        if self.r < height - 1: neighbours += self.lookDown() # > > v
+                        return neighbours
+                    case "v":
+                        if self.c < width - 1: neighbours += self.lookRight() # v > >
+                        if self.r < height - 1: neighbours += self.lookDown() # v > v
+                        return neighbours
+                    case "^":
+                        if self.r > 0: neighbours += self.lookUp() # ^ > ^ delete to optimise
+                        if self.c < width - 1: neighbours += self.lookRight() # ^ > >
+                        return neighbours
+                    case "":
+                        # Second cells
+                        neighbours += self.lookRight() # > >
+                        neighbours += self.lookDown() # > v
+                        return neighbours
+            case "v":
+                match self.p2:
+                    case ">":
+                        if self.p3 != "<" and self.c < width - 1: neighbours += self.lookRight() # > v >
+                        if self.r < height - 1: neighbours += self.lookDown() # > v v
+                        return neighbours
+                    case "v":
+                        if self.p3 != "v" and self.r < height - 1: neighbours += self.lookDown() # v v v
+                        if self.c > 0: neighbours += self.lookLeft() # v v <
+                        if self.c < width - 1: neighbours += self.lookRight() # v v >
+                        return neighbours
+                    case "<":
+                        if self.c > 0: neighbours += self.lookLeft() # < v < delete to optimise
+                        if self.r < height - 1: neighbours += self.lookDown() # < v v
+                        return neighbours
+                    case "":
+                        # Second cells
+                        neighbours += self.lookRight() # v >
+                        neighbours += self.lookDown() # v v
+                        return neighbours
+            case "^":
+                # If up, just go right
+                if self.c < width-1: return self.lookRight()
+                else: return []
+            case "<":
+                # If left just go down
+                if self.r < height-1: return self.lookDown()
+                else: return []
+            case "":
+                # First cell
+                neighbours += self.lookRight() # v >
+                neighbours += self.lookDown() # v v
+                return neighbours
+
+        '''
+        opposite = {"":"","v":"^", "^":"v", "<":">", ">":"<"}
         nogo = [opposite[self.p]] # don't reverse
         if self.p == "<": nogo.append("^") # don't loop back
         if self.p == "^": nogo.append("<") # don't loop back
@@ -129,6 +246,7 @@ class Thing:
                 right: Thing = Thing(self.r, self.c+1, rightDist, ">", self.p, self.m + 1 if self.p == ">" else 1)
                 neighbours.append(PrioritizedItem(right.priority(), right))
         return neighbours
+        '''
 
 class Cell:
     def __init__(self, r: int, c: int, heat: int, bestDist: int = 9999, endDist: int = 9999) -> None:
@@ -226,7 +344,7 @@ def main3():
     frontier.put(PrioritizedItem(origin.priority(), origin))
     searching = True
     # count = 0
-    while searching: # and count < 100000:
+    while searching: #  and count < 10000000:
         cell: Thing = frontier.get().item
         if cell.r == height -1 and cell.c == width-1:
             print(f"Destination reached with total heat: {cell.d}")
