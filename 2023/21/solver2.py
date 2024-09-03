@@ -43,6 +43,14 @@ for r, line in enumerate(data):
 
 Location = tuple[int, int]
 
+class mapCell:
+    def __init__(self, cur_pos = None, full = False) -> None:
+        self.cur_pos = cur_pos if cur_pos is not None else set(())
+        self.full = full
+
+    def __str__(self) -> str:
+        return f"{len(self.cur_pos)} positions"
+
 # Functions
 def getValidNeighbours(location) -> set[Location]:
     (r, c) = location
@@ -57,23 +65,41 @@ def getValidNeighbours(location) -> set[Location]:
     if data[r % height][(c-1) % width] != "#": neighbours.append((r, c-1))
     return neighbours
 
+def totalCount(map: dict):
+    count = 0
+    for cell in map.values():
+        count += len(cell.cur_pos)
+    return count
 # Main code
 def main():
-    desired_steps = 1000
+    desired_steps = 100
     steps = 0
     # Initialise set of current positions
-    current_positions = {start}
-    next_positions = set(())
-    while steps < desired_steps:
-        for cell in current_positions:
-            next_positions.update(getValidNeighbours(cell))
-        current_positions.clear()
-        current_positions.update(next_positions)
-        next_positions.clear()
-        steps +=1
-    positions = len(current_positions)
+    map_cells = {(0,0):mapCell()}
+    map_cells[(0,0)].cur_pos.add(start)
+    next_pos = set(())
 
-    # for position in current_positions:
+    while steps < desired_steps:
+        for map_cell in map_cells.values():
+            if not map_cell.full:
+                for pos in map_cell.cur_pos:
+                    next_pos.update(getValidNeighbours(pos))
+                map_cell.cur_pos.clear()
+        for new_pos in next_pos:
+            (r, c) = new_pos
+            map_cell = (r//height, c//width)
+            if map_cell in map_cells:
+                map_cells[map_cell].cur_pos.add(new_pos)
+            else:
+                map_cells[map_cell] = mapCell()
+                map_cells[map_cell].cur_pos.add(new_pos)
+        next_pos.clear()
+        steps +=1
+
+    # for k, v in map_cells.items(): print(f"{k}: {v}")
+    positions = totalCount(map_cells)
+
+    # for position in cur_pos:
     #     print(position)
 
     answer = positions
