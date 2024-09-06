@@ -31,7 +31,7 @@ Presumably you could calculate how many steps before a cell is filled up.
 Keeping track of
 '''
 # Variables
-input = "puzzle_input.txt"
+input = "test_input.txt"
 with open(input) as file:
     data = file.read().splitlines()
 
@@ -59,10 +59,10 @@ class mapCell:
         self.buffer = 0
 
     def __str__(self) -> str:
-        return f"{len(self.vis_pos) + len(self.cur_pos)} positions"
+        return f"{len(self.vis_pos)} positions"
 
     def count(self) -> int:
-        return len(self.vis_pos) + len(self.cur_pos)
+        return len(self.vis_pos)
 
     def full(self) -> bool:
         if len(self.vis_pos) in full_count:
@@ -107,24 +107,24 @@ def getVNN(location):
     neighbours = set(())
     # North
     if data[(r-1) % height][c % width] != "#":
-        if data[(r-2) % height][c % width] != "#": neighbours.add((r-2, c)) # North
-        if data[(r-1) % height][(c+1) % width] != "#": neighbours.add((r-1, c+1)) # East
-        if data[(r-1) % height][(c-1) % width] != "#": neighbours.add((r-1, c-1)) # West
+        if data[(r-2) % height][c % width] != "#": neighbours.add(((r-2) % height, (c) % width)) # North
+        if data[(r-1) % height][(c+1) % width] != "#": neighbours.add(((r-1) % height, (c+1) % width)) # East
+        if data[(r-1) % height][(c-1) % width] != "#": neighbours.add(((r-1) % height, (c-1) % width)) # West
     # East
     if data[r % height][(c+1) % width] != "#":
-        if data[(r-1) % height][(c+1) % width] != "#": neighbours.add((r-1, c+1)) # North
-        if data[r % height][(c+2) % width] != "#": neighbours.add((r, c+2)) # East
-        if data[(r+1) % height][(c+1) % width] != "#": neighbours.add((r+1, c+1)) # South
+        if data[(r-1) % height][(c+1) % width] != "#": neighbours.add(((r-1) % height, (c+1) % width)) # North
+        if data[r % height][(c+2) % width] != "#": neighbours.add(((r) % height, (c+2) % width)) # East
+        if data[(r+1) % height][(c+1) % width] != "#": neighbours.add(((r+1) % height, (c+1) % width)) # South
     # South
     if data[(r+1) % height][c % width] != "#":
-        if data[(r+1) % height][(c+1) % width] != "#": neighbours.add((r+1, c+1)) # East
-        if data[(r+2) % height][c % width] != "#": neighbours.add((r+2, c)) # South
-        if data[(r+1) % height][(c-1) % width] != "#": neighbours.add((r+1, c-1)) # West
+        if data[(r+1) % height][(c+1) % width] != "#": neighbours.add(((r+1) % height, (c+1) % width)) # East
+        if data[(r+2) % height][c % width] != "#": neighbours.add(((r+2) % height, (c) % width)) # South
+        if data[(r+1) % height][(c-1) % width] != "#": neighbours.add(((r+1) % height, (c-1) % width)) # West
     # West
     if data[r % height][(c-1) % width] != "#":
-        if data[(r-1) % height][(c-1) % width] != "#": neighbours.add((r-1, c-1)) # North
-        if data[(r+1) % height][(c-1) % width] != "#": neighbours.add((r+1, c-1)) # South
-        if data[r % height][(c-2) % width] != "#": neighbours.add((r, c-2)) # West
+        if data[(r-1) % height][(c-1) % width] != "#": neighbours.add(((r-1) % height, (c-1) % width)) # North
+        if data[(r+1) % height][(c-1) % width] != "#": neighbours.add(((r+1) % height, (c-1) % width)) # South
+        if data[r % height][(c-2) % width] != "#": neighbours.add(((r) % height, (c-2) % width)) # West
     return neighbours
 
 
@@ -136,6 +136,41 @@ def totalCount(map: dict) -> int:
     return count
 
 # Main code
+def main3():
+    # Only keep track of one grid
+    # When emerging from one side of the grid loop around
+    # For every cell of the grid keep track of how many times you will reach that cell.
+    # When looking for neighbours from that cell the neighbours will be updated by the number of the source cell
+    # This corresponds to every step on every tile moving to their respective neighbours
+    counts = defaultdict(int)
+    desired_steps = 6
+    steps = 0
+    new_steps = []
+    if desired_steps % 2 == 0: new_steps.append((start, 1))
+    else:
+        starts = getValidNeighbours(start)
+        for nstart in starts:
+            new_steps.append((nstart, 1))
+        steps+=1
+
+    while steps < desired_steps:
+        for pos, step in new_steps:
+            neighbours = getVNN(pos)
+            for neighbour in neighbours:
+                counts[neighbour] += step
+        steps +=2
+
+        new_steps.clear()
+        for loc, count in counts.items():
+            new_steps.append((loc, 1))
+        print(new_steps)
+
+    print(f"after {steps} steps: {sum(counts.values())} plots visited")
+
+
+    pass
+
+
 def main2():
     desired_steps = 5000
     steps = 0
@@ -178,7 +213,7 @@ def main2():
 
 
 def main():
-    desired_steps = 327 # the steps walked after 2.5 maps cells crossed
+    desired_steps = 500
     steps = 0
     # Initialise cell and positions tracker depending on if target is odd or even
     map_cells = defaultdict(mapCell)
@@ -195,61 +230,34 @@ def main():
         # Find neighbours to recent new positions
         cell_list = [value for value in map_cells.values()]
         for map_cell in cell_list:
-            for pos in map_cell.cur_pos:
-                next_pos.update(getVNN(pos))
+            if not map_cell.full():
+                for pos in map_cell.cur_pos:
+                    next_pos.update(getVNN(pos))
 
-            # Add potential new neighbours to map cells
-            for pos in next_pos:
-                (r, c) = pos
-                map_cell = (r//height, c//width)
-                map_cells[map_cell].new_pos.add(pos)
-            next_pos.clear()
+                # Add potential new neighbours to map cells
+                for pos in next_pos:
+                    (r, c) = pos
+                    map_cell = (r//height, c//width)
+                    map_cells[map_cell].new_pos.add(pos)
+                next_pos.clear()
 
         # If new neighbours are actually new shift them into the current positions
         for ms in map_cells.values():
-            ms.new_pos -= ms.vis_pos
-            ms.new_pos -= ms.cur_pos
-            ms.vis_pos.update(ms.cur_pos)
-            ms.cur_pos.clear()
-            ms.cur_pos.update(ms.new_pos)
-            ms.new_pos.clear()
+            if not ms.full():
+                ms.new_pos -= ms.vis_pos
+                ms.new_pos -= ms.cur_pos
+                ms.vis_pos.update(ms.cur_pos)
+                ms.cur_pos.clear()
+                ms.cur_pos.update(ms.new_pos)
+                ms.new_pos.clear()
 
 
 
         steps +=2
         # for k, v in map_cells.items(): print(steps, k, v)
 
-    # grid cells walked after initial in 26501365 steps is 202300 (s - half width of first cell: 65 / width of cell: 131)
-    # There is a clear path from centre to edges of starting map so new map cells will always start at the centre of an edge.
-    #  .^.
-    # ./#\.
-    # <#@#>
-    # '\#/'
-    #  'v'
-    # ^^ After two map cell walks.
-    # From puzzling it out on paper the formula for total plots should be:
-    # (n-1)^2 * count(0,0) + [diamond of even-step map cells]
-    # n^2 * count(0,1) + [diamond of odd-step map cells]
-    # 4(n-1) * (count(1,1) + count(1,-1) + count(-1,1) + count(-1,-1)) +
-    # 4n * (count(1,2)+ count(-1,2) + count(-1,-2) + count(1,-2)) +
-    # (count(0,2) + count(0,-2) + count(2,0) + count(-2,0)) [^, >, V, < tips of diamond]
-
-    n= 202300
-    total = (
-        (n-1)**2 * map_cells[(0,0)].count() +
-        n**2 * map_cells[(0,1)].count() +
-        (n-1) * (map_cells[(1,1)].count() + map_cells[(1,-1)].count() + map_cells[(-1,1)].count() + map_cells[(-1,-1)].count()) +
-        n * (map_cells[(1,2)].count()+ map_cells[(-1,2)].count() + map_cells[(-1,-2)].count() + map_cells[(1,-2)].count()) +
-        (map_cells[(0,2)].count() + map_cells[(0,-2)].count() + map_cells[(2,0)].count() + map_cells[(-2,0)].count())
-    )
-
-    print(f"The formula gives: {total} positions")
     # for k, v in map_cells.items(): print(f"{k}: {v}")
-
-    # Count all visited cells to check formula works for n = 2
     print(f"{len(map_cells)} map cells")
-    for k,v in map_cells.items():
-        print(f"{k}, {v}")
     positions += totalCount(map_cells)
 
     # for k, v in map_cells.items():
@@ -258,4 +266,4 @@ def main():
     answer = positions
     print("The solution is:",answer)
 
-main()
+main3()
