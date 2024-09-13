@@ -40,11 +40,12 @@ final = (len(grid)-1, len(grid[0])-2)
 Position: TypeAlias = tuple[int, int]
 
 class Node():
-    def __init__(n, pos: Position, inb: list = None, outb: list = None) -> None:
+    def __init__(n, pos: Position, inb: list = None, outb: list = None, long: int = 0, vis: bool = False) -> None:
         n.pos = pos # Stores an r,c coordinate for where it exists
         n.inb = inb if inb is not None else [] # Stores list references to incoming edges
         n.outb = outb if outb is not None else [] # Stores references to outgoing edges
-
+        n.long = long # Longest path to this node
+        n.vis = vis
     def __str__(n) -> str:
         return f"{n.pos}, in: {len(n.inb)}, out: {len(n.outb)}"
 
@@ -53,7 +54,7 @@ class Edge():
         e.dir = dir # Direction edge travels to initiate edge
         e.start = start # Stores reference to start node
         e.end = end # Stores reference to end node
-        e.l = l # Stores length of
+        e.l = l # Stores length of edge
 
     def __str__(e) -> str:
         en = e.end.pos if e.end else "TBC"
@@ -114,12 +115,26 @@ class Edge():
         if e.start == start: return e.end
         else: return e.start
 
+def getLongestPath(node, currSum):
+    if node.vis:
+        return
+    node.vis = True
+
+    if node.long < currSum:
+        node.long = currSum
+
+    children = node.inb + node.outb
+    for child in children:
+        getLongestPath(child.traverseFrom(node), currSum + child.l)
+
+    node.vis = False
+
 # Main code
 def main():
     ### Map Network
     # Setup a register of nodes and edges
-    nodes = {}
-    edges = []
+    nodes = {} # int: (pos, list(edges))
+    edges = [] # int: ((node, node), dist)
 
     # Initialise start node and first edge
     startpos = (0,1)
@@ -164,39 +179,64 @@ def main():
         # Repeat until queue is empty
 
     print("\nNodes")
-    for node in nodes.values(): print(node)
-    edges.sort(key = lambda x: x.start.pos)
+    for k in nodes.keys(): print(nodes[k])
     print("\nEdges")
     for edge in edges: print(edge)
 
+    ### Visualise
+    output = [[" " for char in line] for line in grid]
+
+    for r,c in nodes:
+        output[r//5][c//5] = "@"
+
+    edgemark = {">": "-", "v": "|"}
+
+    for edge in edges:
+        r0, c0 = edge.start.pos
+        r1, c1 = edge.end.pos
+
+        r= (r0//5+r1//5)//2
+        c= (c0//5+c1//5)//2
+        if output[r][c] != "@": output[r][c] = edgemark[edge.dir]
+
+
+    output = ["".join(line) for line in output]
+    with open("output.txt", "w") as file:
+        for line in output:
+            file.write(line+"\n")
+
     ### Longest path
     # Keep a list of route frontiers, initialise with start node
-    routes = [(nodes[(0,1)], 0, [])]
-    route_ds = []
-    count = 0
+    # routes = [(nodes[(0,1)], 0, [])]
+    # route_ds = []
+    # count = 0
 
     # While end node not found:
-    while len(routes) > 0 and count < 1000:
-        count += 1
-        # Traverse to next node, create new frontiers based on number of departing edges
-        current_n, current_d, comp_n = routes.pop()
-        if current_n.pos != final:
-            es = current_n.outb + current_n.inb
-            ns = [(e.traverseFrom(current_n), e.l) for e in es]
-            valid_ns = [(n, d) for (n, d) in ns if n not in comp_n]
-            # print("Valid nodes:", *valid_ns)
-            for (n, d) in valid_ns:
-                routes.append((n, current_d + d, comp_n+[current_n]))
-        else:
-            route_ds.append(current_d)
-            # print(current_d, current_n, len(comp_n))
+    # while len(routes) > 0 and count < 1000:
+    #     count += 1
+    #     # Traverse to next node, create new frontiers based on number of departing edges
+    #     current_n, current_d, comp_n = routes.pop()
+    #     if current_n.pos != final:
+    #         es = current_n.outb + current_n.inb
+    #         ns = [(e.traverseFrom(current_n), e.l) for e in es]
+    #         valid_ns = [(n, d) for (n, d) in ns if n not in comp_n]
+    #         # print("Valid nodes:", *valid_ns)
+    #         for (n, d) in valid_ns:
+    #             routes.append((n, current_d + d, comp_n+[current_n]))
+    #     else:
+    #         route_ds.append(current_d)
+    #         # print(current_d, current_n, len(comp_n))
 
-    print("\nRoutes in progress")
-    for route in routes[0:10]: print(*route[2], route[0], route[1])
-    print("\nRoute distances:")
-    print(route_ds)
+    # print("\nRoutes in progress")
+    # for route in routes[0:10]: print(*route[2], route[0], route[1])
+    # print("\nRoute distances:")
+    # print(route_ds)
 
-    answer = max(route_ds) if len(route_ds) > 0 else "TBC"
+    # answer = max(route_ds) if len(route_ds) > 0 else "TBC"
+
+    getLongestPath(start_n, 0)
+    answer = nodes[(140,139)].long
+
     print("The solution is:",answer)
 
 main()
