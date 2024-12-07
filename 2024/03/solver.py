@@ -37,7 +37,7 @@ def mul_strip(memory:str) -> str:
         if len(segment) > 0 and segment[0] in "0123456789" and "," in segment and ")" in segment:
             # print(segment)
             try: new_new_memory.append([int(x) for x in segment.split(")")[0].split(",")])
-            except: print(f"Rejected segment: {segment}")
+            except: pass # print(f"Rejected segment: {segment}")
 
 
     # print(f"New new memory: {new_new_memory}")
